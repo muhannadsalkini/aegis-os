@@ -17,8 +17,22 @@
  */
 
 import type { Tool } from '../types/tool.js';
+
+// Phase 1 Tools
 import { calculatorTool } from './calculator.js';
 import { timeTool } from './time.js';
+
+// Phase 2 Tools - Web & HTTP
+import { webSearchTool } from './web/search.js';
+import { httpFetchTool } from './http/fetch.js';
+
+// Phase 2 Tools - Weather
+import { weatherTool } from './weather/weather.js';
+
+// Phase 2 Tools - Filesystem
+import { readFileTool } from './filesystem/read.js';
+import { writeFileTool } from './filesystem/write.js';
+import { listDirectoryTool } from './filesystem/list.js';
 
 /**
  * Map of all registered tools
@@ -34,7 +48,6 @@ function registerTool(tool: Tool): void {
     console.warn(`⚠️ Tool "${tool.name}" is already registered. Overwriting.`);
   }
   toolRegistry.set(tool.name, tool);
-  console.log(`🔧 Registered tool: ${tool.name}`);
 }
 
 /**
@@ -62,6 +75,21 @@ export function getToolsByNames(names: string[]): Tool[] {
 }
 
 /**
+ * Get tools by category
+ */
+export function getToolsByCategory(category: 'math' | 'time' | 'web' | 'filesystem' | 'weather'): Tool[] {
+  const categories: Record<string, string[]> = {
+    math: ['calculator'],
+    time: ['get_current_time'],
+    web: ['web_search', 'http_fetch'],
+    filesystem: ['read_file', 'write_file', 'list_directory'],
+    weather: ['get_weather'],
+  };
+  
+  return getToolsByNames(categories[category] || []);
+}
+
+/**
  * Execute a tool by name
  * 
  * This is called when the AI requests a tool execution.
@@ -83,9 +111,12 @@ export async function executeTool(
   console.log(`\n🔧 Executing tool: ${name}`);
   console.log(`   Arguments: ${JSON.stringify(args)}`);
   
+  const startTime = Date.now();
   const result = await tool.execute(args);
+  const duration = Date.now() - startTime;
   
-  console.log(`   Result: ${JSON.stringify(result)}\n`);
+  console.log(`   Duration: ${duration}ms`);
+  console.log(`   Success: ${result.success}`);
   
   return result;
 }
@@ -94,14 +125,36 @@ export async function executeTool(
 // Register all tools
 // ==========================================
 
-// Phase 1 tools
+console.log('\n📦 Registering tools...');
+
+// Phase 1 - Basic tools
 registerTool(calculatorTool);
 registerTool(timeTool);
 
-// Export individual tools for direct access if needed
+// Phase 2 - Web & HTTP tools
+registerTool(webSearchTool);
+registerTool(httpFetchTool);
+
+// Phase 2 - Weather tool
+registerTool(weatherTool);
+
+// Phase 2 - Filesystem tools
+registerTool(readFileTool);
+registerTool(writeFileTool);
+registerTool(listDirectoryTool);
+
+console.log(`✅ Tool Registry initialized with ${toolRegistry.size} tools:`);
+toolRegistry.forEach((tool, name) => {
+  console.log(`   • ${name}`);
+});
+console.log('');
+
+// Export individual tools for direct access
 export { calculatorTool } from './calculator.js';
 export { timeTool } from './time.js';
-
-console.log(`\n✅ Tool Registry initialized with ${toolRegistry.size} tools\n`);
-
-
+export { webSearchTool } from './web/search.js';
+export { httpFetchTool } from './http/fetch.js';
+export { weatherTool } from './weather/weather.js';
+export { readFileTool } from './filesystem/read.js';
+export { writeFileTool } from './filesystem/write.js';
+export { listDirectoryTool } from './filesystem/list.js';

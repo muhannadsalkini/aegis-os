@@ -131,7 +131,7 @@ export default function TestConsole() {
             </div>
             <div>
               <h1 className="font-semibold text-aegis-text">Aegis OS</h1>
-              <p className="text-xs text-aegis-textDim">Test Console • Phase 1</p>
+              <p className="text-xs text-aegis-textDim">Test Console • Phase 2</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -162,15 +162,16 @@ export default function TestConsole() {
                 Test Your Agent
               </h2>
               <p className="text-aegis-textDim max-w-md mx-auto mb-6">
-                Try asking math questions to see the calculator tool in action,
-                or ask about the current time!
+                Test your agent with math, weather, web search, and file operations!
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-2 justify-center max-w-2xl">
                 {[
                   "What is 25 * 48?",
-                  "What time is it?",
-                  "Calculate 15% of 250",
-                  "What's the square root of 144?",
+                  "What's the weather in Tokyo?",
+                  "Search: What is TypeScript?",
+                  "What time is it in London?",
+                  "List files in workspace",
+                  "Read workspace/README.md",
                 ].map((suggestion) => (
                   <button
                     key={suggestion}
