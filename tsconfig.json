@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    /* Base Options - Modern TypeScript for AI Agent Development */
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    
+    /* Strict Type Checking - Essential for reliable AI tools */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    
+    /* Module Options */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    
+    /* Output Options */
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    
+    /* Path Mapping - For clean imports */
+    "baseUrl": ".",
+    "paths": {
+      "@aegis/shared-types": ["packages/shared-types/src"],
+      "@aegis/sdk": ["packages/sdk/src"]
+    },
+    
+    /* Skip checking node_modules */
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "dist", ".next"]
+}
+
