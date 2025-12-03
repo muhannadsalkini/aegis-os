@@ -1,0 +1,27 @@
+{
+  "name": "agent-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aegis OS Agent Engine - Handles AI agents, tools, RAG, and streaming",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --exec tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "openai": "^4.68.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "nodemon": "^3.1.11",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

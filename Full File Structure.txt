@@ -1,0 +1,174 @@
+aegis-os/
+│
+├── apps/
+│   ├── web/                   # Next.js 15 frontend (Aegis Dashboard)
+│   │   ├── app/
+│   │   │   ├── agents/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── [agentId]/
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── chat/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   ├── settings/
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── components/
+│   │   │   ├── chat/
+│   │   │   │   ├── ChatStreamViewer.tsx
+│   │   │   │   └── ToolCallStream.tsx
+│   │   │   ├── agents/
+│   │   │   │   ├── AgentCard.tsx
+│   │   │   │   └── CreateAgentModal.tsx
+│   │   ├── lib/
+│   │   │   ├── trpc/
+│   │   │   │   ├── client.ts
+│   │   │   │   └── provider.tsx
+│   │   │   ├── ai/
+│   │   │   │   ├── stream.ts     # Uses Vercel AI SDK
+│   │   │   └── utils.ts
+│   │   ├── public/
+│   │   └── tailwind.config.js
+│   │
+│   └── agent-backend/           # Node agent engine (Express/Fastify)
+│       ├── src/
+│       │   ├── server.ts
+│       │   ├── config/
+│       │   │   ├── env.ts
+│       │   │   └── openai.ts
+│       │   ├── agents/
+│       │   │   ├── index.ts          # Agent registry
+│       │   │   ├── base-agent.ts
+│       │   │   ├── orchestrator-agent.ts
+│       │   │   ├── researcher-agent.ts
+│       │   │   └── convo-agent.ts
+│       │   ├── tools/
+│       │   │   ├── index.ts
+│       │   │   ├── http/
+│       │   │   │   └── fetch.ts
+│       │   │   ├── system/
+│       │   │   │   ├── time.ts
+│       │   │   │   └── logger.ts
+│       │   │   ├── database/
+│       │   │   │   └── insertRecord.ts
+│       │   │   ├── search/
+│       │   │   │   └── webSearch.ts
+│       │   │   └── email/
+│       │   │       └── sendEmail.ts
+│       │   ├── rag/
+│       │   │   ├── embeddings.ts
+│       │   │   ├── chunking.ts
+│       │   │   ├── loader.ts
+│       │   │   └── retriever.ts
+│       │   ├── routes/
+│       │   │   ├── agent.route.ts         # POST /agents/:id/respond
+│       │   │   ├── tools.route.ts
+│       │   │   └── rag.route.ts
+│       │   ├── mcp/
+│       │   │   ├── server.ts
+│       │   │   ├── file-system/
+│       │   │   │   ├── fs.mcp.ts
+│       │   │   ├── db/
+│       │   │   │   └── pg.mcp.ts
+│       │   │   └── http/
+│       │   │       └── fetch.mcp.ts
+│       │   ├── types/
+│       │   │   ├── agent.ts
+│       │   │   └── tool.ts
+│       │   └── utils/
+│       │       ├── stream.ts             # SSE streaming helper
+│       │       ├── logger.ts
+│       │       └── id.ts
+│       └── package.json
+│
+├── packages/
+│   ├── shared-types/            # Zod types, DTOs, utilities
+│   │   ├── index.ts
+│   │   ├── schemas/
+│   │   │   ├── agent.schema.ts
+│   │   │   ├── message.schema.ts
+│   │   │   └── tool.schema.ts
+│   │   └── utils/
+│   │       └── validators.ts
+│   │
+│   ├── ui/                      # Shared UI components (optional)
+│   │   └── ...
+│   │
+│   └── sdk/                     # JS SDK to call your agents
+│       ├── index.ts
+│       ├── client.ts
+│       └── streaming.ts
+│
+├── docker/
+│   ├── backend.Dockerfile
+│   ├── web.Dockerfile
+│   └── compose.yaml
+│
+└── tsconfig.json
+
+
+
+💡 Key Architectural Notes
+1. Two-app structure
+
+web → UI for managing agents, tools, KBs, streaming
+
+agent-backend → runs the agents, tools, MCP, RAG, streaming
+
+Like a cockpit + engine room.
+
+2. Agents are isolated modules
+
+Located in:
+
+agent-backend/src/agents/
+
+
+Every agent:
+
+Has a config
+
+Has allowed tools
+
+Has its own reasoning loop
+
+Can call other agents through the orchestrator
+
+3. Tools are atomic functions
+
+Each tool has:
+
+JSON schema
+
+A TypeScript implementation
+
+Registration entry
+
+4. RAG is its own universe
+rag/
+  embeddings.ts
+  chunking.ts
+  loader.ts
+  retriever.ts
+
+
+Keeps it flexible enough to swap Supabase ↔ Qdrant.
+
+5. MCP support included
+
+MCP servers live in:
+
+mcp/
+
+
+Each MCP “tool offer” is cleanly separated.
+
+6. Full Streaming Support
+
+In both:
+
+apps/web/lib/ai/stream.ts
+
+agent-backend/utils/stream.ts
+
+Handles token-by-token output + tool logs.

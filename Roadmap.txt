@@ -1,0 +1,207 @@
+Roadmap: The Path to Agent Mastery
+
+Imagine this like climbing a spiraling tower — each floor unlocks a new artifact.
+
+🎯 Phase 1 — Foundations (5–7 days)
+
+Understand the moving pieces.
+
+Learn:
+
+How LLMs do function calling
+
+How tools work (JSON schema inputs → function → model uses output)
+
+What a RAG system is (chunks → vectors → embedding search → context injection)
+
+How streaming works (SSE / fetch with ReadableStream)
+
+Build:
+
+A simple “Chat with function calling” demo
+
+A single tool (e.g., a calculator)
+
+Goal artifact:
+Your first “tiny agent” that calls a function during the chat.
+
+🛠️ Phase 2 — Tooling Mastery (7–10 days)
+
+Teach your agent to touch the world.
+
+Learn:
+
+How to define JSON schema tools
+
+Async tools and streaming tool output
+
+Passing tool output back into the model
+
+Safety: controlling what tools can do
+
+Build:
+
+3–5 tools:
+
+Web search (ScraperAPI or your own crawler 🤝 your GCP setup)
+
+Database writer
+
+File reader
+
+Email sender
+
+Weather API
+
+Goal artifact:
+Your “Agent Toolbelt” — a folder of reusable tool functions.
+
+📚 Phase 3 — RAG & Knowledgebases (10–14 days)
+
+Time to construct your library of Alexandria.
+
+Learn:
+
+Embeddings
+
+Chunking strategies
+
+Query rewriting
+
+Retrieval augmentation
+
+Hybrid search
+
+Build:
+
+Upload documents (PDF/MD/TXT)
+
+Parse them
+
+Chunk + embed
+
+Store in Supabase
+
+Retrieve for agent conversations
+
+Goal artifact:
+Your RAG pipeline with an admin dashboard.
+
+🕸️ Phase 4 — Agent Types (7–12 days)
+
+Agents are not just chatbots — they’re personalities with jobs.
+
+Learn:
+
+Architectures:
+
+Reactive agents
+
+Planning agents
+
+ReAct
+
+Toolformer-style
+
+Autonomy loops
+
+Multi-agent collaboration
+
+Build:
+
+Researcher agent (search → browse → summarize)
+
+Planner agent (break goals into steps)
+
+Orchestrator agent (dispatch tasks to other agents)
+
+Goal artifact:
+A mini “Agent Zoo” — 3 agents working together.
+
+🔧 Phase 5 — MCP (Model Context Protocol) (7–10 days)
+
+The future of tools. Add it to your OS.
+
+Learn:
+
+What MCP is
+
+How to create an MCP server (Node)
+
+How to expose filesystem, browser, databases, crawlers as MCP tools
+
+Connect your agents to MCP tools
+
+Build:
+
+Your first MCP tool (e.g., read/write files)
+
+Add MCP plugins into Aegis OS
+
+Goal artifact:
+An MCP-enabled agent that uses OS-level tools.
+
+🔮 Phase 6 — Streaming Everything (5–7 days)
+
+Make responses feel alive.
+
+Learn:
+
+Streaming model output
+
+Streaming tool calls
+
+Streaming tool results back to the client
+
+Render real-time UI tokens in Next.js
+
+Build:
+
+Chat UI with token-by-token display
+
+Live tool logs (like ChatGPT)
+
+Partial thoughts & deltas
+
+Goal artifact:
+A ChatGPT-level realtime interface.
+
+🏛️ Phase 7 — Aegis OS (Final Project)
+
+All roads converge. Assemble the puzzle.
+
+Build the full platform:
+
+Dashboard
+
+Create agent
+
+Add tools
+
+Add RAG knowledgebase
+
+See tool logs live
+
+Connect MCP tools
+
+Set agent personality
+
+Evaluate agent messages
+
+Deploy
+
+You now know:
+
+✔ Agents
+✔ Tools
+✔ RAG
+✔ Knowledgebases
+✔ Streaming
+✔ MCP
+✔ Multi-agent systems
+✔ Full stack glue
+✔ Deployment
+✔ Authentication
+✔ tRPC + Next.js + Node
+
+You’ve built an entire AI agent operating system.

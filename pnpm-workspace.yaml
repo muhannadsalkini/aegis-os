@@ -1,0 +1,9 @@
+# Aegis OS - pnpm Workspace Configuration
+# This defines which directories contain packages in our monorepo
+
+packages:
+  # Applications
+  - "apps/*"
+  # Shared packages
+  - "packages/*"
+

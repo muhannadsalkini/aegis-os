@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net" modified="2025-11-30T12:00:00Z" agent="5.0" version="20.8.10">
+  <diagram id="aegis-architecture" name="Aegis OS Architecture">
+    <mxGraphModel dx="1422" dy="786" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- FRONTEND -->
+        <mxCell id="frontend" value="Frontend (Next.js 15 UI)&#xa;• Agent Dashboard&#xa;• Chat UI&#xa;• Streaming" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="440" y="40" width="340" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow to Backend -->
+        <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="frontend" target="backend">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- BACKEND MAIN BOX -->
+        <mxCell id="backend" value="Agent Backend (Node.js)&#xa;• Express/Fastify&#xa;• OpenAI SDK&#xa;• tRPC/REST/WS" style="rounded=1;whiteSpace=wrap;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="300" y="190" width="620" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Reasoning Engine -->
+        <mxCell id="reasoning" value="Reasoning Engine&#xa;• ReAct Loop&#xa;• Tool Planning&#xa;• RAG Injection" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="330" y="340" width="260" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Agent Types -->
+        <mxCell id="agent-types" value="Agent Types&#xa;• Researcher&#xa;• Orchestrator&#xa;• Conversational" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="630" y="340" width="260" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Link reasoning -> agent types -->
+        <mxCell id="arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="reasoning" target="agent-types">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Tool Layer -->
+        <mxCell id="tools" value="Tool Layer&#xa;• HTTP Fetch&#xa;• DB Tools&#xa;• Search&#xa;• Email&#xa;• System Utilities" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="330" y="500" width="260" height="130" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: Reasoning -> Tools -->
+        <mxCell id="arrow3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="reasoning" target="tools">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- MCP Layer -->
+        <mxCell id="mcp" value="MCP Gateway&#xa;• Filesystem&#xa;• HTTP&#xa;• Postgres&#xa;• Custom Tools" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="630" y="500" width="260" height="130" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: Tools <-> MCP -->
+        <mxCell id="arrow4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;startArrow=classic;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="tools" target="mcp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- RAG Pipeline -->
+        <mxCell id="rag" value="RAG Pipeline&#xa;• Chunking&#xa;• Embeddings&#xa;• Retrieval" style="rounded=1;whiteSpace=wrap;fillColor=#f4cccc;strokeColor=#cc4125;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="330" y="680" width="260" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Knowledgebase -->
+        <mxCell id="kb" value="Knowledgebase&#xa;• Supabase (pgvector)&#xa;• File Storage&#xa;• Metadata" style="rounded=1;whiteSpace=wrap;fillColor=#c9daf8;strokeColor=#6d9eeb;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="630" y="680" width="260" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: RAG <-> KB -->
+        <mxCell id="arrow5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;startArrow=classic;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="rag" target="kb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Streaming Layer -->
+        <mxCell id="streaming" value="Streaming Layer&#xa;• SSE / WebSockets&#xa;• Live Tokens&#xa;• Tool Logs" style="rounded=1;whiteSpace=wrap;fillColor=#fce5cd;strokeColor=#e69138;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="300" y="840" width="620" height="120" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
