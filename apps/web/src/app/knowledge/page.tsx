@@ -54,7 +54,8 @@ export default function KnowledgePage() {
         formData.append('file', file);
 
         try {
-            const response = await fetch('http://localhost:3001/knowledge/upload', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            const response = await fetch(`${apiUrl}/knowledge/upload`, {
                 method: 'POST',
                 body: formData,
             });
@@ -82,7 +83,8 @@ export default function KnowledgePage() {
 
         setIsSearching(true);
         try {
-            const response = await fetch('http://localhost:3001/knowledge/search', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            const response = await fetch(`${apiUrl}/knowledge/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: searchQuery }),

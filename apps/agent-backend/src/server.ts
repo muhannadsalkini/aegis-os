@@ -48,7 +48,8 @@ async function bootstrap() {
   try {
     // Register CORS for frontend access
     await fastify.register(cors, {
-      origin: true, // Allow all origins in development
+      origin: process.env.WEB_APP_URL || true, // Use env var or allow all in dev
+      credentials: true,
     });
 
     // Register Multipart for file uploads
