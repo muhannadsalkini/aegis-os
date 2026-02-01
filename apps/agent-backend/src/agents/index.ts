@@ -19,6 +19,9 @@
 import type { AgentConfig } from '../types/agent.js';
 import { BaseAgent } from './base-agent.js';
 import { getAllTools } from '../tools/index.js';
+import { createResearcherAgent } from './researcher-agent.js';
+import { createPlannerAgent } from './planner-agent.js';
+import { createOrchestratorAgent } from './orchestrator-agent.js';
 
 /**
  * Map of registered agents
@@ -126,7 +129,29 @@ export function createAgent(config: AgentConfig): BaseAgent {
 // Initialize the default agent
 getDefaultAgent();
 
+// Initialize Phase 4 specialized agents
+console.log('\n🔧 Initializing Phase 4 specialized agents...');
+
+const researcherAgent = createResearcherAgent();
+agentRegistry.set(researcherAgent.getConfig().id, researcherAgent);
+console.log(`   ✅ ${researcherAgent.getConfig().name} ready`);
+
+const plannerAgent = createPlannerAgent();
+agentRegistry.set(plannerAgent.getConfig().id, plannerAgent);
+console.log(`   ✅ ${plannerAgent.getConfig().name} ready`);
+
+const orchestratorAgent = createOrchestratorAgent();
+agentRegistry.set(orchestratorAgent.getConfig().id, orchestratorAgent);
+console.log(`   ✅ ${orchestratorAgent.getConfig().name} ready`);
+
+console.log(`\n🤖 Agent Zoo initialized with ${agentRegistry.size} agents\n`);
+
 // Re-export the BaseAgent class
 export { BaseAgent } from './base-agent.js';
+
+// Export specialized agent creators
+export { createResearcherAgent } from './researcher-agent.js';
+export { createPlannerAgent } from './planner-agent.js';
+export { createOrchestratorAgent } from './orchestrator-agent.js';
 
 

@@ -17,7 +17,36 @@
  * with these numbers and tell me what you get?"
  */
 
+
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
+
+/**
+ * JSON Schema property definition
+ * Supports nested objects, arrays, primitives, and common constraints
+ */
+export type JSONSchemaProperty = 
+  | {
+      type: 'string' | 'number' | 'boolean' | 'integer';
+      description: string;
+      enum?: string[] | number[];
+      minimum?: number;
+      maximum?: number;
+      default?: unknown;
+    }
+  | {
+      type: 'array';
+      description: string;
+      items?: JSONSchemaProperty;
+      minItems?: number;
+      maxItems?: number;
+    }
+  | {
+      type: 'object';
+      description: string;
+      properties?: Record<string, JSONSchemaProperty>;
+      required?: string[];
+      additionalProperties?: boolean;
+    };
 
 /**
  * Result of executing a tool
@@ -28,6 +57,7 @@ export interface ToolResult {
   result?: unknown;
   error?: string;
 }
+
 
 /**
  * The function that actually executes the tool
@@ -64,14 +94,12 @@ export interface Tool {
    * - type: "object" means the parameters are an object
    * - properties: defines each parameter
    * - required: array of required parameter names
+   * - For arrays, use items to define the array element schema
+   * - For nested objects, use properties recursively
    */
   parameters: {
     type: 'object';
-    properties: Record<string, {
-      type: string;
-      description: string;
-      enum?: string[];
-    }>;
+    properties: Record<string, JSONSchemaProperty>;
     required: string[];
   };
   

@@ -27,6 +27,7 @@ import { env } from './config/env.js';
 import { agentRoutes } from './routes/agent.route.js';
 import { toolRoutes } from './routes/tools.route.js';
 import { knowledgeRoutes } from './routes/knowledge.route.js';
+import { registerOrchestratorRoutes } from './routes/orchestrator.route.js';
 
 // Create the Fastify instance
 const fastify = Fastify({
@@ -80,7 +81,7 @@ async function bootstrap() {
       return {
         name: 'Aegis OS - Agent Backend',
         version: '0.1.0',
-        phase: 'Phase 3: RAG & Knowledgebases',
+        phase: 'Phase 4: Agent Types & Multi-Agent Systems',
         endpoints: {
           health: 'GET /health',
           agents: {
@@ -94,8 +95,12 @@ async function bootstrap() {
             details: 'GET /tools/:name',
             test: 'POST /tools/:name/test',
           },
+          orchestrator: {
+            execute: 'POST /api/orchestrator',
+            listAgents: 'GET /api/orchestrator/agents',
+          },
         },
-        documentation: 'See docs/phase-1-foundations/ for learning notes',
+        documentation: 'See docs/phase-4-agent-types/ for learning notes',
       };
     });
     
@@ -103,6 +108,7 @@ async function bootstrap() {
     await fastify.register(agentRoutes);
     await fastify.register(toolRoutes);
     await fastify.register(knowledgeRoutes);
+    await fastify.register(registerOrchestratorRoutes);
     
     // Start the server
     await fastify.listen({ port: env.PORT, host: '0.0.0.0' });
@@ -116,14 +122,16 @@ async function bootstrap() {
 ║   Environment: ${env.NODE_ENV.padEnd(11)}                              ║
 ║   Model: ${env.OPENAI_MODEL.padEnd(17)}                              ║
 ║                                                               ║
-║   📖 Phase 1: Foundations                                     ║
-║      Learn function calling with the calculator tool!         ║
+║   🕸️  Phase 4: Agent Types & Multi-Agent Systems             ║
+║      • Researcher Agent (ReAct pattern)                       ║
+║      • Planner Agent (Planning-first)                         ║
+║      • Orchestrator Agent (Delegation)                        ║
 ║                                                               ║
-║   🧪 Test it:                                                 ║
-║      curl -X POST http://localhost:${env.PORT}/agents/chat \\        ║
-║        -H "Content-Type: application/json" \\                 ║
-║        -d '{"messages":[{"role":"user",                       ║
-║             "content":"What is 25 * 48?"}]}'                  ║
+║   🧪 Test the Agent Zoo:                                      ║
+║      curl -X POST http://localhost:${env.PORT}/api/orchestrator \\\\ ║
+║        -H "Content-Type: application/json" \\\\                 ║
+║        -d '{"task":"Research ReAct architecture and           ║
+║             create a plan to implement it"}'                  ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
     `);

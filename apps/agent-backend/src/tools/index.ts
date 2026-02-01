@@ -25,6 +25,8 @@ import { timeTool } from './time.js';
 // Phase 2 Tools - Web & HTTP
 import { webSearchTool } from './web/search.js';
 import { httpFetchTool } from './http/fetch.js';
+import { webBrowseTool } from './web/browse.js';
+import { summarizeTool } from './web/summarize.js';
 
 // Phase 2 Tools - Weather
 import { weatherTool } from './weather/weather.js';
@@ -36,6 +38,14 @@ import { listDirectoryTool } from './filesystem/list.js';
 
 // Phase 3 Tools - Knowledge Base
 import { searchKnowledgebaseTool } from './knowledge/search.js';
+
+// Phase 4 Tools - Planning
+import { taskDecompositionTool } from './planner/decompose.js';
+import { goalValidationTool } from './planner/validate.js';
+
+// Phase 4 Tools - Orchestration
+import { agentDelegationTool } from './orchestrator/delegate.js';
+import { agentCoordinationTool } from './orchestrator/coordinate.js';
 
 /**
  * Map of all registered tools
@@ -80,13 +90,19 @@ export function getToolsByNames(names: string[]): Tool[] {
 /**
  * Get tools by category
  */
-export function getToolsByCategory(category: 'math' | 'time' | 'web' | 'filesystem' | 'weather'): Tool[] {
+export function getToolsByCategory(
+  category: 'math' | 'time' | 'web' | 'filesystem' | 'weather' | 'knowledge' | 'research' | 'planning' | 'orchestration'
+): Tool[] {
   const categories: Record<string, string[]> = {
     math: ['calculator'],
     time: ['get_current_time'],
-    web: ['web_search', 'http_fetch'],
+    web: ['web_search', 'http_fetch', 'web_browse'],
     filesystem: ['read_file', 'write_file', 'list_directory'],
     weather: ['get_weather'],
+    knowledge: ['search_knowledgebase'],
+    research: ['web_search', 'web_browse', 'summarize'],
+    planning: ['decompose_task', 'validate_goal'],
+    orchestration: ['delegate_to_agent', 'coordinate_agents'],
   };
   
   return getToolsByNames(categories[category] || []);
@@ -137,6 +153,8 @@ registerTool(timeTool);
 // Phase 2 - Web & HTTP tools
 registerTool(webSearchTool);
 registerTool(httpFetchTool);
+registerTool(webBrowseTool);
+registerTool(summarizeTool);
 
 // Phase 2 - Weather tool
 registerTool(weatherTool);
@@ -149,6 +167,14 @@ registerTool(listDirectoryTool);
 // Phase 3 - Knowledge tool
 registerTool(searchKnowledgebaseTool);
 
+// Phase 4 - Planning tools
+registerTool(taskDecompositionTool);
+registerTool(goalValidationTool);
+
+// Phase 4 - Orchestration tools
+registerTool(agentDelegationTool);
+registerTool(agentCoordinationTool);
+
 console.log(`✅ Tool Registry initialized with ${toolRegistry.size} tools:`);
 toolRegistry.forEach((tool, name) => {
   console.log(`   • ${name}`);
@@ -160,8 +186,14 @@ export { calculatorTool } from './calculator.js';
 export { timeTool } from './time.js';
 export { webSearchTool } from './web/search.js';
 export { httpFetchTool } from './http/fetch.js';
+export { webBrowseTool } from './web/browse.js';
+export { summarizeTool } from './web/summarize.js';
 export { weatherTool } from './weather/weather.js';
 export { readFileTool } from './filesystem/read.js';
 export { writeFileTool } from './filesystem/write.js';
 export { listDirectoryTool } from './filesystem/list.js';
 export { searchKnowledgebaseTool } from './knowledge/search.js';
+export { taskDecompositionTool } from './planner/decompose.js';
+export { goalValidationTool } from './planner/validate.js';
+export { agentDelegationTool } from './orchestrator/delegate.js';
+export { agentCoordinationTool } from './orchestrator/coordinate.js';
