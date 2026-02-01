@@ -53,6 +53,8 @@ import { openai, defaultModel } from '../config/openai.js';
 import { toOpenAITool } from '../types/tool.js';
 import type { AgentConfig, AgentContext, AgentResponse, ToolCallInfo } from '../types/agent.js';
 import { executeTool } from '../tools/index.js';
+import { estimateComplexity, estimateTokenCount } from '../utils/complexity-estimator.js';
+import { selectModel, calculateCost, formatCost, OpenAIModel, TaskComplexity } from '../config/model-config.js';
 
 /**
  * Maximum number of tool call iterations
@@ -111,9 +113,43 @@ export class BaseAgent {
       iterations++;
       console.log(`\n📍 Iteration ${iterations}`);
       
+      // Determine which model to use
+      let modelToUse = this.config.model || defaultModel;
+      let estimatedComplexity: TaskComplexity | undefined;
+      
+      // Only do dynamic selection on first iteration
+      if (iterations === 1) {
+        const strategy = this.config.modelPreference || 'auto';
+        
+        if (strategy === 'auto' || strategy === 'cost-optimized') {
+          // Get the user's message for complexity estimation
+          const userMessage = context.messages.find(m => m.role === 'user')?.content?.toString() || '';
+          
+          // Estimate complexity
+          estimatedComplexity = this.config.complexity || estimateComplexity({
+            agentType: this.config.type,
+            toolCount: this.config.tools.length,
+            messageLength: userMessage.length,
+            userMessage,
+          });
+          
+          // Select model based on complexity
+          const selectedModel = selectModel(
+            estimatedComplexity,
+            strategy === 'cost-optimized' ? 0.05 : undefined  // 5 cents max for cost-optimized
+          );
+          
+          modelToUse = selectedModel;
+          
+          console.log(`🎯 Complexity: ${estimatedComplexity}, Model: ${modelToUse}`);
+        } else {
+          console.log(`🔒 Using fixed model: ${modelToUse}`);
+        }
+      }
+      
       // Call the OpenAI API
       const response = await openai.chat.completions.create({
-        model: this.config.model || defaultModel,
+        model: modelToUse,
         messages,
         tools: tools.length > 0 ? tools : undefined,
         temperature: this.config.temperature ?? 0.7,
@@ -182,6 +218,24 @@ export class BaseAgent {
        */
       console.log(`✅ Final response received after ${iterations} iteration(s)`);
       
+      // Calculate cost if we have usage data
+      let costInfo;
+      if (response.usage) {
+        try {
+          const modelUsed = (this.config.model || defaultModel) as OpenAIModel;
+          costInfo = calculateCost(
+            modelUsed,
+            response.usage.prompt_tokens,
+            response.usage.completion_tokens
+          );
+          
+          console.log(`💰 Cost: ${formatCost(costInfo.totalCost)} (${costInfo.inputTokens} in, ${costInfo.outputTokens} out)`);
+        } catch (error) {
+          // If model not in catalog, skip cost calculation
+          console.warn(`⚠️  Could not calculate cost for model: ${this.config.model || defaultModel}`);
+        }
+      }
+      
       return {
         content: assistantMessage.content || '',
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
@@ -190,6 +244,7 @@ export class BaseAgent {
           completionTokens: response.usage.completion_tokens,
           totalTokens: response.usage.total_tokens,
         } : undefined,
+        costInfo,
       };
     }
     

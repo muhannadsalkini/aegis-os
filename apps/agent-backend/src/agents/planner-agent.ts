@@ -21,6 +21,7 @@
 import type { AgentConfig } from '../types/agent.js';
 import { BaseAgent } from './base-agent.js';
 import { getToolsByCategory, getToolsByNames } from '../tools/index.js';
+import { TaskComplexity } from '../config/model-config.js';
 
 /**
  * Create the Planner Agent
@@ -93,6 +94,9 @@ Structure your plans as:
       ...getToolsByCategory('planning'),
       ...getToolsByNames(['calculator', 'get_current_time'])
     ],
+    
+    // Planning is a complex cognitive task
+    complexity: TaskComplexity.COMPLEX,
     
     // Lower temperature for more consistent, logical planning
     temperature: 0.4,

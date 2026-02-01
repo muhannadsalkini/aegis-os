@@ -21,6 +21,7 @@
 import type { AgentConfig } from '../types/agent.js';
 import { BaseAgent } from './base-agent.js';
 import { getToolsByCategory, getToolsByNames } from '../tools/index.js';
+import { TaskComplexity } from '../config/model-config.js';
 
 /**
  * Create the Researcher Agent
@@ -90,6 +91,9 @@ Structure your research findings as:
       ...getToolsByCategory('research'),
       ...getToolsByNames(['calculator', 'get_current_time'])
     ],
+    
+    // Research typically requires moderate complexity
+    complexity: TaskComplexity.MODERATE,
     
     // Balanced temperature for focused research
     temperature: 0.5,

@@ -18,6 +18,7 @@
 
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import type { Tool } from './tool.js';
+import type { TaskComplexity, CostInfo } from '../config/model-config.js';
 
 /**
  * Types of agents in Aegis OS
@@ -72,6 +73,20 @@ export interface AgentConfig {
   model?: string;
   
   /**
+   * Task complexity level for this agent (optional)
+   * If not specified, will be estimated automatically
+   */
+  complexity?: TaskComplexity;
+  
+  /**
+   * Model preference strategy (optional)
+   * - 'auto': Use complexity-based selection (default)
+   * - 'fixed': Always use the specified model
+   * - 'cost-optimized': Choose cheapest model for complexity
+   */
+  modelPreference?: 'auto' | 'fixed' | 'cost-optimized';
+  
+  /**
    * Temperature for response creativity (0-2)
    * - 0: Very focused/deterministic
    * - 1: Balanced (default)
@@ -123,6 +138,11 @@ export interface AgentResponse {
     completionTokens: number;
     totalTokens: number;
   };
+  
+  /**
+   * Cost information for this request
+   */
+  costInfo?: CostInfo;
 }
 
 /**

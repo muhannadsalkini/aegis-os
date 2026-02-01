@@ -92,6 +92,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
           content: response.content,
           toolCalls: response.toolCalls,
           usage: response.usage,
+          costInfo: response.costInfo,
         },
       });
     } catch (error) {
@@ -140,6 +141,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
           content: response.content,
           toolCalls: response.toolCalls,
           usage: response.usage,
+          costInfo: response.costInfo,
         },
       });
     } catch (error) {

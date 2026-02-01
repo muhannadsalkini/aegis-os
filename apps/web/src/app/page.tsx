@@ -24,6 +24,12 @@ interface ChatResponse {
       completionTokens: number;
       totalTokens: number;
     };
+    costInfo?: {
+      totalCost: number;
+      inputCost: number;
+      outputCost: number;
+      model: string;
+    };
   };
   error?: string;
 }
@@ -41,6 +47,12 @@ export default function TestConsole() {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+  } | null>(null);
+  const [costInfo, setCostInfo] = useState<{
+    totalCost: number;
+    inputCost: number;
+    outputCost: number;
+    model: string;
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -92,6 +104,9 @@ export default function TestConsole() {
         if (data.data.usage) {
           setUsage(data.data.usage);
         }
+        if (data.data.costInfo) {
+          setCostInfo(data.data.costInfo);
+        }
       } else {
         setError(data.error || "Unknown error occurred");
       }
@@ -118,6 +133,13 @@ export default function TestConsole() {
     setToolCalls([]);
     setError(null);
     setUsage(null);
+    setCostInfo(null);
+  };
+
+  const formatCost = (cost: number) => {
+    if (cost < 0.0001) return `$${cost.toFixed(6)}`;
+    if (cost < 0.01) return `$${cost.toFixed(5)}`;
+    return `$${cost.toFixed(4)}`;
   };
 
   return (
@@ -200,8 +222,8 @@ export default function TestConsole() {
             >
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
-                    ? "bg-aegis-accent text-aegis-bg rounded-br-md"
-                    : "bg-aegis-surface border border-aegis-border rounded-bl-md"
+                  ? "bg-aegis-accent text-aegis-bg rounded-br-md"
+                  : "bg-aegis-surface border border-aegis-border rounded-bl-md"
                   }`}
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
@@ -270,11 +292,23 @@ export default function TestConsole() {
         )}
 
         {/* Usage Stats */}
-        {usage && (
-          <div className="border-t border-aegis-border px-4 py-2 flex items-center gap-4 text-xs text-aegis-textDim">
-            <span>📊 Tokens: {usage.totalTokens}</span>
-            <span>↗️ Prompt: {usage.promptTokens}</span>
-            <span>↙️ Completion: {usage.completionTokens}</span>
+        {(usage || costInfo) && (
+          <div className="border-t border-aegis-border px-4 py-2 flex flex-wrap items-center gap-4 text-xs text-aegis-textDim">
+            {usage && (
+              <>
+                <span>📊 Tokens: {usage.totalTokens}</span>
+                <span>↗️ Prompt: {usage.promptTokens}</span>
+                <span>↙️ Completion: {usage.completionTokens}</span>
+              </>
+            )}
+
+            {costInfo && (
+              <>
+                <div className="w-px h-3 bg-aegis-border mx-1"></div>
+                <span className="text-aegis-accent font-medium">💰 Cost: {formatCost(costInfo.totalCost)}</span>
+                <span title="Model used">🤖 {costInfo.model}</span>
+              </>
+            )}
           </div>
         )}
 

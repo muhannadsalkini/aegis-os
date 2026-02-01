@@ -39,6 +39,10 @@ const envSchema = z.object({
   // Supabase Configuration
   SUPABASE_URL: z.string().url('Must be a valid URL'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase Service Role Key is required'),
+  
+  // Model Selection Strategy (optional)
+  MODEL_SELECTION_STRATEGY: z.enum(['auto', 'fixed', 'cost-optimized']).optional().default('auto'),
+  MAX_COST_PER_REQUEST: z.string().transform(Number).optional(),  // In cents
 });
 
 /**

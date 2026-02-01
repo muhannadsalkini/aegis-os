@@ -67,7 +67,8 @@ export async function registerOrchestratorRoutes(fastify: FastifyInstance) {
           delegations: response.toolCalls?.filter(tc => 
             tc.toolName === 'delegate_to_agent' || tc.toolName === 'coordinate_agents'
           ),
-          usage: response.usage
+          usage: response.usage,
+          costInfo: response.costInfo
         }
       });
       
