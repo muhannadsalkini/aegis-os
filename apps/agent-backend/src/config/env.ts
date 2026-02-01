@@ -35,6 +35,10 @@ const envSchema = z.object({
   // Server Configuration
   PORT: z.string().transform(Number).default('3001'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+
+  // Supabase Configuration
+  SUPABASE_URL: z.string().url('Must be a valid URL'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase Service Role Key is required'),
 });
 
 /**

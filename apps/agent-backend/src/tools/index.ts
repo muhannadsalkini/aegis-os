@@ -34,6 +34,9 @@ import { readFileTool } from './filesystem/read.js';
 import { writeFileTool } from './filesystem/write.js';
 import { listDirectoryTool } from './filesystem/list.js';
 
+// Phase 3 Tools - Knowledge Base
+import { searchKnowledgebaseTool } from './knowledge/search.js';
+
 /**
  * Map of all registered tools
  * Key: tool name, Value: tool definition
@@ -143,6 +146,9 @@ registerTool(readFileTool);
 registerTool(writeFileTool);
 registerTool(listDirectoryTool);
 
+// Phase 3 - Knowledge tool
+registerTool(searchKnowledgebaseTool);
+
 console.log(`✅ Tool Registry initialized with ${toolRegistry.size} tools:`);
 toolRegistry.forEach((tool, name) => {
   console.log(`   • ${name}`);
@@ -158,3 +164,4 @@ export { weatherTool } from './weather/weather.js';
 export { readFileTool } from './filesystem/read.js';
 export { writeFileTool } from './filesystem/write.js';
 export { listDirectoryTool } from './filesystem/list.js';
+export { searchKnowledgebaseTool } from './knowledge/search.js';

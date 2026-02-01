@@ -60,7 +60,7 @@ export default function TestConsole() {
 
     const userMessage: Message = { role: "user", content: input.trim() };
     const newMessages = [...messages, userMessage];
-    
+
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
@@ -139,6 +139,13 @@ export default function TestConsole() {
               <span className="w-2 h-2 rounded-full bg-aegis-success animate-pulse"></span>
               <span className="text-aegis-textDim">Backend Connected</span>
             </div>
+            <a
+              href="/knowledge"
+              className="px-3 py-1.5 text-xs rounded-md bg-aegis-accent/10 hover:bg-aegis-accent/20 text-aegis-accent border border-aegis-accent/30 hover:border-aegis-accent/50 transition-colors flex items-center gap-1.5"
+            >
+              <span>📚</span>
+              <span>Knowledge</span>
+            </a>
             <button
               onClick={clearChat}
               className="px-3 py-1.5 text-xs rounded-md bg-aegis-border hover:bg-aegis-border/80 text-aegis-textDim hover:text-aegis-text transition-colors"
@@ -188,16 +195,14 @@ export default function TestConsole() {
           {messages.map((message, index) => (
             <div
               key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"
+                }`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === "user"
+                className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
                     ? "bg-aegis-accent text-aegis-bg rounded-br-md"
                     : "bg-aegis-surface border border-aegis-border rounded-bl-md"
-                }`}
+                  }`}
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>

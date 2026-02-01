@@ -20,11 +20,13 @@
  * If you know Express, Fastify will feel familiar!
  */
 
-import Fastify from 'fastify';
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import { env } from './config/env.js';
 import { agentRoutes } from './routes/agent.route.js';
 import { toolRoutes } from './routes/tools.route.js';
+import { knowledgeRoutes } from './routes/knowledge.route.js';
 
 // Create the Fastify instance
 const fastify = Fastify({
@@ -47,6 +49,13 @@ async function bootstrap() {
     await fastify.register(cors, {
       origin: true, // Allow all origins in development
     });
+
+    // Register Multipart for file uploads
+    await fastify.register(multipart, {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      }
+    });
     
     // Health check endpoint
     fastify.get('/health', async () => {
@@ -56,13 +65,22 @@ async function bootstrap() {
         version: '0.1.0',
       };
     });
+
+    fastify.post('/test', async (request: FastifyRequest, reply: FastifyReply) => {
+      console.log('req: ', request.body);
+      return reply.send({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        version: '0.1.0',
+      });
+    });
     
     // Root endpoint with info
     fastify.get('/', async () => {
       return {
         name: 'Aegis OS - Agent Backend',
         version: '0.1.0',
-        phase: 'Phase 1: Foundations',
+        phase: 'Phase 3: RAG & Knowledgebases',
         endpoints: {
           health: 'GET /health',
           agents: {
@@ -84,6 +102,7 @@ async function bootstrap() {
     // Register route handlers
     await fastify.register(agentRoutes);
     await fastify.register(toolRoutes);
+    await fastify.register(knowledgeRoutes);
     
     // Start the server
     await fastify.listen({ port: env.PORT, host: '0.0.0.0' });

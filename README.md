@@ -22,7 +22,7 @@ By the end of this project, you'll understand:
 |-------|-------|--------|
 | 1️⃣ | **Foundations** — LLM function calling, first tool | ✅ Complete |
 | 2️⃣ | **Tooling Mastery** — 6 tools, safety patterns | ✅ Complete |
-| 3️⃣ | **RAG & Knowledgebases** — Embeddings, chunking, retrieval | ⏳ Next |
+| 3️⃣ | **RAG & Knowledgebases** — Embeddings, chunking, retrieval | ✅ Complete |
 | 4️⃣ | **Agent Types** — Researcher, Planner, Orchestrator | 🔜 Upcoming |
 | 5️⃣ | **MCP Integration** — Model Context Protocol | 🔜 Upcoming |
 | 6️⃣ | **Streaming Everything** — Real-time UI | 🔜 Upcoming |
