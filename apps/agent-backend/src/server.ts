@@ -47,7 +47,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Register CORS for frontend access
   await fastify.register(cors, {
-    origin: process.env.WEB_APP_URL || true, // Use env var or allow all in dev
+    origin: (process.env.WEB_APP_URL || '').replace(/\/$/, '') || true, // Use env var (without trailing slash) or allow all in dev
     credentials: true,
   });
 
