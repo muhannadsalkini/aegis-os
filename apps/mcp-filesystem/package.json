@@ -1,0 +1,21 @@
+{
+    "name": "mcp-filesystem",
+    "version": "1.0.0",
+    "description": "MCP Server for Filesystem Access",
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "dev": "tsx watch src/index.ts"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "latest",
+        "zod": "^3.23.8"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.6.0"
+    }
+}

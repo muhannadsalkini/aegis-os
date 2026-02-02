@@ -118,6 +118,9 @@ export async function buildApp(): Promise<FastifyInstance> {
  */
 async function bootstrap() {
   try {
+    // Initialize MCP Tools
+    await import('./tools/index.js').then(m => m.initializeMcpTools());
+
     const fastify = await buildApp();
     
     // Start the server
