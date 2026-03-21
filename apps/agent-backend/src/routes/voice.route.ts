@@ -70,6 +70,13 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         socket.send(JSON.stringify({ type: 'reply', text }));
       });
 
+      session.on('ttsStart', () => {
+        if (socket.readyState !== 1) return;
+        // Sentinel JSON frame: tells the client to reset PCM byte-alignment state
+        // before the binary audio frames for the next sentence arrive.
+        socket.send(JSON.stringify({ type: 'tts_start' }));
+      });
+
       session.on('audioChunk', (chunk: Buffer) => {
         if (socket.readyState !== 1) return;
         socket.send(chunk); // send binary frame

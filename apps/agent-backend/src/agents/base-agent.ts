@@ -251,7 +251,137 @@ export class BaseAgent {
     // If we hit max iterations, something went wrong
     throw new Error(`Agent exceeded maximum iterations (${MAX_ITERATIONS})`);
   }
-  
+
+  /**
+   * chatStream — Streaming version for voice agent use.
+   *
+   * Uses OpenAI streaming mode and yields complete sentences one by one as
+   * soon as they are formed, so the TTS layer can start speaking the first
+   * sentence while the LLM is still generating the rest.
+   *
+   * For tool calls: we still handle them, but we buffer the full output and
+   * restart streaming after the tool results come back.
+   */
+  async *chatStream(context: AgentContext, signal?: AbortSignal): AsyncGenerator<string> {
+    const messages: ChatCompletionMessageParam[] = [
+      { role: 'system', content: this.config.systemPrompt },
+      ...context.messages,
+    ];
+
+    const tools = this.config.tools.map(toOpenAITool);
+    let iterations = 0;
+
+    while (iterations < MAX_ITERATIONS) {
+      if (signal?.aborted) return;
+      iterations++;
+
+      // Determine model (same logic as chat())
+      let modelToUse = this.config.model || defaultModel;
+      if (iterations === 1) {
+        const strategy = this.config.modelPreference || 'auto';
+        if (strategy === 'auto' || strategy === 'cost-optimized') {
+          const userMessage = context.messages.find(m => m.role === 'user')?.content?.toString() || '';
+          const estimatedComplexity = this.config.complexity || estimateComplexity({
+            agentType: this.config.type,
+            toolCount: this.config.tools.length,
+            messageLength: userMessage.length,
+            userMessage,
+          });
+          modelToUse = selectModel(estimatedComplexity, strategy === 'cost-optimized' ? 0.05 : undefined);
+        }
+      }
+
+      const stream = await openai.chat.completions.create({
+        model: modelToUse,
+        messages,
+        tools: tools.length > 0 ? tools : undefined,
+        temperature: this.config.temperature ?? 0.7,
+        stream: true,
+      });
+
+      // Accumulate the streamed response
+      let buffer = '';           // Pending partial sentence
+      let fullContent = '';      // Full assistant text for history
+      const toolCallAccum: Record<number, { id: string; name: string; args: string }> = {};
+
+      for await (const chunk of stream) {
+        if (signal?.aborted) return;   // Check abort at every streaming token
+        const delta = chunk.choices[0]?.delta;
+        if (!delta) continue;
+
+        // Accumulate tool call deltas
+        // Guard against empty arrays: `delta.tool_calls` can be `[]` (truthy!)
+        // when there are actually no tool calls, which would break hasToolCalls logic.
+        if (delta.tool_calls && delta.tool_calls.length > 0) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index;
+            if (!toolCallAccum[idx]) {
+              // Initialize with empty name — we'll accumulate it via +=
+              // (do NOT pre-seed from tc.function?.name here, otherwise the
+              //  first chunk would be counted twice because we also += below)
+              toolCallAccum[idx] = { id: tc.id ?? '', name: '', args: '' };
+            }
+            if (tc.id) toolCallAccum[idx].id = tc.id;
+            if (tc.function?.name) toolCallAccum[idx].name += tc.function.name;
+            if (tc.function?.arguments) toolCallAccum[idx].args += tc.function.arguments;
+          }
+        }
+
+        // Accumulate text tokens
+        if (delta.content) {
+          buffer += delta.content;
+          fullContent += delta.content;
+
+          // Yield complete sentences as soon as we have them
+          const sentences = extractCompleteSentences(buffer);
+          if (sentences.ready.length > 0) {
+            yield sentences.ready;
+            buffer = sentences.remainder;
+          }
+        }
+      }
+
+      // Yield whatever's left in the buffer (last fragment)
+      if (buffer.trim()) {
+        yield buffer.trim();
+      }
+
+      // Use the accumulator length as ground truth — NOT hasToolCalls bool
+      const toolCallsList = Object.values(toolCallAccum);
+      if (toolCallsList.length === 0) {
+        // No tool calls — we're done streaming the response
+        messages.push({ role: 'assistant', content: fullContent });
+        return;
+      }
+
+      // Handle tool calls — execute and loop back
+      const assistantMsg: ChatCompletionAssistantMessageParam = {
+        role: 'assistant',
+        content: fullContent || null,
+        tool_calls: toolCallsList.map(tc => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: { name: tc.name, arguments: tc.args },
+        })),
+      };
+      messages.push(assistantMsg);
+
+      for (const tc of toolCallsList) {
+        if (signal?.aborted) return;   // Check abort before each tool execution
+        const toolArgs = JSON.parse(tc.args || '{}');
+        const result = await executeTool(tc.name, toolArgs);
+        const toolMsg: ChatCompletionToolMessageParam = {
+          role: 'tool',
+          tool_call_id: tc.id,
+          content: JSON.stringify(result),
+        };
+        messages.push(toolMsg);
+      }
+    }
+
+    throw new Error(`Agent exceeded maximum iterations (${MAX_ITERATIONS})`);
+  }
+
   /**
    * Get the agent's configuration
    */
@@ -284,3 +414,23 @@ export class BaseAgent {
  *    system prompt helps guide behavior.
  */
 
+
+/**
+ * Split accumulated streaming text into complete sentences (ready for TTS) and
+ * a trailing partial sentence (keep buffering).
+ *
+ * Splits on `.  ?  !  :` when followed by whitespace or end-of-string.
+ */
+function extractCompleteSentences(text: string): { ready: string; remainder: string } {
+  const sentenceEnd = /([.?!:])(?=\s|$)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = sentenceEnd.exec(text)) !== null) {
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex === 0) return { ready: '', remainder: text };
+  return {
+    ready: text.slice(0, lastIndex).trim(),
+    remainder: text.slice(lastIndex),
+  };
+}

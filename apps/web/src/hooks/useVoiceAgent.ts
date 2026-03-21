@@ -212,6 +212,11 @@ export function useVoiceAgent({ apiUrl }: UseVoiceAgentProps) {
             if (msg.isFinal) {
               setPartialTranscript(''); // typically cleared when state shifts to thinking
             }
+          } else if (msg.type === 'tts_start') {
+            // A new ElevenLabs sentence stream is starting. Each sentence is an
+            // independent PCM audio stream, so we MUST reset the leftover-byte cache
+            // to avoid the first sample of this sentence being misaligned.
+            pcmLeftoverRef.current = null;
           } else if (msg.type === 'reply') {
             setPartialTranscript(msg.text);
           } else if (msg.type === 'state') {

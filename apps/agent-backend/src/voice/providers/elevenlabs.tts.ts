@@ -16,6 +16,9 @@ export class ElevenLabsTtsProvider implements ITtsProvider {
       text,
       model_id: modelId,
       output_format: outputFormat,
+      // Max latency optimization — ElevenLabs will prioritize delivering
+      // the first audio chunk as fast as possible at the cost of some quality.
+      optimize_streaming_latency: 4,
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,

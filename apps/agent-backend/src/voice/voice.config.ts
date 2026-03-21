@@ -10,8 +10,10 @@ export const VOICE_CONFIG = {
     provider: 'deepgram' as const,
     model: 'nova-2',
     language: 'en-US',
-    /** Silence (ms) after last Deepgram is_final before we close the utterance */
-    silenceTimeoutMs: 2000,
+    /** Silence (ms) after last Deepgram is_final before we close the utterance.
+     *  500ms is enough — Deepgram's speechFinal handles real silence. The timer
+     *  is only a safety fallback. Dropping from 2000 → 500 saves ~1.5s per turn. */
+    silenceTimeoutMs: 500,
   },
   tts: {
     provider: 'elevenlabs' as const,

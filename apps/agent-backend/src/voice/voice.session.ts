@@ -11,6 +11,7 @@ export interface VoiceSessionEvents {
   'state': (state: VoiceState) => void;
   'transcript': (payload: { text: string; isFinal: boolean }) => void;
   'reply': (payload: { text: string }) => void;
+  'ttsStart': () => void;   // emitted before each sentence's TTS audio so the frontend can reset PCM byte alignment
   'audioChunk': (chunk: Buffer) => void;
   'error': (err: { code: string; message: string }) => void;
   'end': () => void;
@@ -51,6 +52,8 @@ export class VoiceSession extends EventEmitter {
   /** Set to true while we're processing (thinking / speaking) — gates new audio */
   private isBusy = false;
   private isInterrupted = false;
+  /** AbortController for the in-flight chatStream call — abort() stops LLM/tool mid-execution */
+  private abortController: AbortController | null = null;
 
   constructor(sttProvider: ISttProvider, ttsProvider: ITtsProvider) {
     super();
@@ -90,6 +93,9 @@ export class VoiceSession extends EventEmitter {
     this.isBusy = false;
     this.isInterrupted = true;
     this.accumulatedUtterance = '';
+    // Abort any in-flight LLM stream or tool execution immediately
+    this.abortController?.abort();
+    this.abortController = null;
     this.emit('state', 'listening' as VoiceState);
   }
 
@@ -115,17 +121,18 @@ export class VoiceSession extends EventEmitter {
 
       const fullText = (this.accumulatedUtterance + ' ' + text).trim();
       this.partialTranscript = fullText;
-      
+
       // Emit the combined string to the frontend
       this.emit('transcript', { text: fullText, isFinal: Boolean(speechFinal) });
-
-      // Reset silence timer on every transcript event
-      this.resetSilenceTimer();
 
       if (isFinal) {
         // A chunk was locked in! Append it forever.
         this.accumulatedUtterance += ' ' + text;
         this.accumulatedUtterance = this.accumulatedUtterance.trim();
+        // Only reset silence timer on confirmed (isFinal) chunks — NOT on every
+        // partial. Resetting on partials caused the 500ms timer to fire mid-word
+        // and trigger processUtterance before the user finished speaking.
+        this.resetSilenceTimer();
       }
 
       if (speechFinal) {
@@ -172,33 +179,61 @@ export class VoiceSession extends EventEmitter {
     // Add user turn to history
     this.conversationHistory.push({ role: 'user', content: text });
 
-    let replyText: string;
+    const agent = getDefaultAgent();
+
+    // Fresh abort controller for this turn — interrupt() will call .abort() on it
+    this.abortController = new AbortController();
+    const { signal } = this.abortController;
+
+    let fullReply = '';
+    let speakingStarted = false;
+
     try {
-      const agent = getDefaultAgent();
-      const response = await agent.chat({ messages: this.conversationHistory });
-      replyText = response.content;
+      for await (const sentence of agent.chatStream({ messages: this.conversationHistory }, signal)) {
+        if (this.isInterrupted) break;
+
+        // Trim and skip empty sentences
+        const trimmed = sentence.trim();
+        if (!trimmed) continue;
+
+        fullReply += (fullReply ? ' ' : '') + trimmed;
+
+        // Transition to speaking on the first real sentence
+        if (!speakingStarted) {
+          speakingStarted = true;
+          this.emit('state', 'speaking' as VoiceState);
+          this.emit('reply', { text: fullReply }); // send first sentence preview
+        }
+
+        // Stream this sentence to TTS immediately — don't wait for the rest
+        try {
+          // Signal the frontend to reset PCM byte alignment before each new sentence stream.
+          // Each ElevenLabs call is an independent PCM stream; without this signal the
+          // leftover byte from the previous sentence would poison the next one.
+          this.emit('ttsStart');
+          for await (const chunk of this.ttsProvider.synthesize(trimmed)) {
+            if (this.isInterrupted) break;
+            this.emit('audioChunk', chunk);
+          }
+        } catch (ttsErr) {
+          console.error('TTS error for sentence chunk:', ttsErr);
+          // Non-fatal: skip this sentence's audio but keep going
+        }
+
+        if (this.isInterrupted) break;
+      }
     } catch (err) {
+      console.error('LLM stream error:', err);
       this.isBusy = false;
-      this.emitError('llm_failed', err instanceof Error ? err.message : 'LLM call failed');
+      this.emitError('llm_failed', err instanceof Error ? err.message : 'LLM stream failed');
       return;
     }
 
-    // Add assistant turn to history
-    this.conversationHistory.push({ role: 'assistant', content: replyText });
-
-    this.emit('state', 'speaking' as VoiceState);
-    this.emit('reply', { text: replyText });
-
-    try {
-      for await (const chunk of this.ttsProvider.synthesize(replyText)) {
-        if (this.isInterrupted) break;
-        this.emit('audioChunk', chunk);
-      }
-    } catch (err) {
-      console.log(err)
-      this.isBusy = false;
-      this.emitError('tts_failed', err instanceof Error ? err.message : 'TTS synthesis failed');
-      return;
+    // Add assistant turn to history with the full accumulated reply
+    if (fullReply) {
+      this.conversationHistory.push({ role: 'assistant', content: fullReply });
+      // Update the frontend with the complete reply text
+      this.emit('reply', { text: fullReply });
     }
 
     this.isBusy = false;
