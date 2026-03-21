@@ -43,6 +43,10 @@ const envSchema = z.object({
   // Model Selection Strategy (optional)
   MODEL_SELECTION_STRATEGY: z.enum(['auto', 'fixed', 'cost-optimized']).optional().default('auto'),
   MAX_COST_PER_REQUEST: z.string().transform(Number).optional(),  // In cents
+
+  // Voice API Keys (required for voice agent)
+  DEEPGRAM_API_KEY: z.string().default(''),
+  ELEVENLABS_API_KEY: z.string().default(''),
 });
 
 /**

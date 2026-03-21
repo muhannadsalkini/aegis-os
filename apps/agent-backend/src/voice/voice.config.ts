@@ -1,0 +1,26 @@
+/**
+ * Voice Agent Configuration
+ *
+ * All model/voice constants are hardcoded here.
+ * To swap providers or voices later, only this file needs to change.
+ */
+
+export const VOICE_CONFIG = {
+  stt: {
+    provider: 'deepgram' as const,
+    model: 'nova-2',
+    language: 'en-US',
+    /** Silence (ms) after last Deepgram is_final before we close the utterance */
+    silenceTimeoutMs: 2000,
+  },
+  tts: {
+    provider: 'elevenlabs' as const,
+    /** George — clear, neutral, works well for short replies */
+    voiceId: 'JBFqnCBsd6RMkjVDRZzb',
+    modelId: 'eleven_turbo_v2_5',
+    outputFormat: 'pcm_24000' as const,
+  },
+} as const;
+
+export type SttProvider = typeof VOICE_CONFIG.stt.provider;
+export type TtsProvider = typeof VOICE_CONFIG.tts.provider;

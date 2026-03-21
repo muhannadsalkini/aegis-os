@@ -23,11 +23,13 @@
 import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import websocket from '@fastify/websocket';
 import { env } from './config/env.js';
 import { agentRoutes } from './routes/agent.route.js';
 import { toolRoutes } from './routes/tools.route.js';
 import { knowledgeRoutes } from './routes/knowledge.route.js';
 import { registerOrchestratorRoutes } from './routes/orchestrator.route.js';
+import { voiceRoutes } from './routes/voice.route.js';
 
 /**
  * Build the Fastify app instance
@@ -57,6 +59,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       fileSize: 10 * 1024 * 1024, // 10MB
     }
   });
+
+  // Register WebSocket support (for voice /voice/ws)
+  await fastify.register(websocket);
   
   // Health check endpoint
   fastify.get('/health', async () => {
@@ -109,6 +114,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await fastify.register(toolRoutes);
   await fastify.register(knowledgeRoutes);
   await fastify.register(registerOrchestratorRoutes);
+  await fastify.register(voiceRoutes);
 
   return fastify;
 }

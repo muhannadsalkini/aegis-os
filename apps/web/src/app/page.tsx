@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useVoiceAgent } from "../hooks/useVoiceAgent";
+import { MicButton } from "../components/voice/MicButton";
+import { VoiceWaveform } from "../components/voice/VoiceWaveform";
+import { VoiceStatusBar } from "../components/voice/VoiceStatusBar";
 
 // Types
 interface Message {
@@ -56,6 +60,18 @@ export default function TestConsole() {
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Voice capabilities
+  const {
+    voiceState,
+    partialTranscript,
+    errorMsg: voiceError,
+    startListening,
+    stopSession,
+    getByteFrequencyData,
+  } = useVoiceAgent({ apiUrl: API_URL });
+
+  const isVoiceActive = voiceState !== 'idle';
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -257,6 +273,17 @@ export default function TestConsole() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Voice Status Bar */}
+        <div className="px-4 pb-2">
+          <VoiceStatusBar
+            state={voiceState}
+            partialTranscript={partialTranscript}
+            errorMsg={voiceError}
+            onStop={stopSession}
+            onRetryError={startListening}
+          />
+        </div>
+
         {/* Tool Calls Panel */}
         {toolCalls.length > 0 && (
           <div className="border-t border-aegis-border bg-aegis-surface/50 p-4">
@@ -313,26 +340,46 @@ export default function TestConsole() {
         )}
 
         {/* Input Area */}
-        <div className="border-t border-aegis-border bg-aegis-surface/50 p-4">
-          <div className="flex gap-3">
+        <div className="border-t border-aegis-border bg-aegis-surface/50 p-4 shrink-0 transition-all flex flex-col gap-3">
+          {/* Waveform Visualization (Dynamic height based on state) */}
+          {isVoiceActive && voiceState !== 'error' && (
+            <div className="w-full animation-in slide-in-from-bottom-2 fade-in">
+              <VoiceWaveform state={voiceState} getByteFrequencyData={getByteFrequencyData} />
+            </div>
+          )}
+
+          <div className="flex gap-3 relative">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask your agent something..."
+              disabled={isVoiceActive || isLoading}
+              placeholder={isVoiceActive ? "Voice mode active..." : "Ask your agent something..."}
               rows={1}
               className="flex-1 bg-aegis-bg border border-aegis-border rounded-xl px-4 py-3 text-aegis-text placeholder:text-aegis-textDim focus:outline-none focus:border-aegis-accent/50 resize-none"
             />
-            <button
-              onClick={sendMessage}
-              disabled={isLoading || !input.trim()}
-              className="px-6 py-3 bg-aegis-accent text-aegis-bg font-semibold rounded-xl hover:bg-aegis-accentDim disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? "..." : "Send"}
-            </button>
+            <div className="flex flex-col gap-2 shrink-0">
+              <button
+                onClick={sendMessage}
+                disabled={isLoading || !input.trim() || isVoiceActive}
+                className="px-6 py-3 bg-aegis-accent text-aegis-bg font-semibold rounded-xl hover:bg-aegis-accentDim disabled:opacity-50 disabled:cursor-not-allowed transition-colors grow"
+              >
+                {isLoading ? "..." : "Send"}
+              </button>
+            </div>
+            {/* Minimalist Floating Action Button for Voice */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[5.5rem] flex items-center h-full py-1.5 pointer-events-none">
+              <div className="pointer-events-auto h-full flex mt-1">
+                 <MicButton 
+                  state={voiceState} 
+                  onClick={isVoiceActive ? stopSession : startListening}
+                  disabled={isLoading} 
+                 />
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-aegis-textDim mt-2 text-center">
+          <p className="text-xs text-aegis-textDim mt-1 text-center">
             Press Enter to send • Shift+Enter for new line
           </p>
         </div>
