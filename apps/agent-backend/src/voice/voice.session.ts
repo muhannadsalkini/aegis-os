@@ -179,12 +179,15 @@ export class VoiceSession extends EventEmitter {
     this.partialTranscript = '';
 
     // Emit user message immediately so the frontend can add a user chat bubble.
-    // This fires whether the turn was triggered by speechFinal OR the silence timer,
-    // so it's the only reliable commit point.
     this.emit('userMessage', { text });
 
     // Add user turn to history
     this.conversationHistory.push({ role: 'user', content: text });
+
+    // ✅ FIX: Reset accumulatedUtterance so the NEXT turn starts clean.
+    // Without this, isFinal chunks from the previous turn keep accumulating
+    // and prepend themselves to the next user message.
+    this.accumulatedUtterance = '';
 
     const agent = getDefaultAgent();
 
@@ -205,24 +208,25 @@ export class VoiceSession extends EventEmitter {
       )) {
         if (this.isInterrupted) break;
 
-        // Trim and skip empty sentences
         const trimmed = sentence.trim();
         if (!trimmed) continue;
 
         fullReply += (fullReply ? ' ' : '') + trimmed;
 
-        // Transition to speaking on the first real sentence
+        // Transition to speaking state on first sentence
         if (!speakingStarted) {
           speakingStarted = true;
           this.emit('state', 'speaking' as VoiceState);
-          this.emit('reply', { text: fullReply }); // send first sentence preview
         }
+
+        // ✅ FIX: Emit reply with THIS sentence only (not the accumulated fullReply).
+        // The old code emitted the first sentence on speakingStarted, then emitted the
+        // FULL accumulated text again at the end — causing the first sentence to appear
+        // twice in the chat bubble (doubling effect).
+        this.emit('reply', { text: trimmed });
 
         // Stream this sentence to TTS immediately — don't wait for the rest
         try {
-          // Signal the frontend to reset PCM byte alignment before each new sentence stream.
-          // Each ElevenLabs call is an independent PCM stream; without this signal the
-          // leftover byte from the previous sentence would poison the next one.
           this.emit('ttsStart');
           for await (const chunk of this.ttsProvider.synthesize(trimmed)) {
             if (this.isInterrupted) break;
@@ -230,7 +234,6 @@ export class VoiceSession extends EventEmitter {
           }
         } catch (ttsErr) {
           console.error('TTS error for sentence chunk:', ttsErr);
-          // Non-fatal: skip this sentence's audio but keep going
         }
 
         if (this.isInterrupted) break;
@@ -242,11 +245,10 @@ export class VoiceSession extends EventEmitter {
       return;
     }
 
-    // Add assistant turn to history with the full accumulated reply
+    // Save assistant turn to history (full accumulated reply for context)
+    // Do NOT emit reply again here — already sent sentence-by-sentence above.
     if (fullReply) {
       this.conversationHistory.push({ role: 'assistant', content: fullReply });
-      // Update the frontend with the complete reply text
-      this.emit('reply', { text: fullReply });
     }
 
     this.isBusy = false;
