@@ -10,8 +10,10 @@ export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error
 export interface VoiceSessionEvents {
   'state': (state: VoiceState) => void;
   'transcript': (payload: { text: string; isFinal: boolean }) => void;
+  'userMessage': (payload: { text: string }) => void; // fired when processUtterance starts — guaranteed regardless of trigger
   'reply': (payload: { text: string }) => void;
-  'ttsStart': () => void;   // emitted before each sentence's TTS audio so the frontend can reset PCM byte alignment
+  'ttsStart': () => void;
+  'toolCall': (payload: { toolName: string; args: unknown; result: unknown }) => void;
   'audioChunk': (chunk: Buffer) => void;
   'error': (err: { code: string; message: string }) => void;
   'end': () => void;
@@ -176,6 +178,11 @@ export class VoiceSession extends EventEmitter {
     this.emit('state', 'thinking' as VoiceState);
     this.partialTranscript = '';
 
+    // Emit user message immediately so the frontend can add a user chat bubble.
+    // This fires whether the turn was triggered by speechFinal OR the silence timer,
+    // so it's the only reliable commit point.
+    this.emit('userMessage', { text });
+
     // Add user turn to history
     this.conversationHistory.push({ role: 'user', content: text });
 
@@ -189,7 +196,13 @@ export class VoiceSession extends EventEmitter {
     let speakingStarted = false;
 
     try {
-      for await (const sentence of agent.chatStream({ messages: this.conversationHistory }, signal)) {
+      for await (const sentence of agent.chatStream(
+        { messages: this.conversationHistory },
+        signal,
+        (toolName, args, result) => {
+          this.emit('toolCall', { toolName, args, result });
+        },
+      )) {
         if (this.isInterrupted) break;
 
         // Trim and skip empty sentences

@@ -178,6 +178,14 @@ async function bootstrap() {
 import { pathToFileURL } from 'url';
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  // Guard against uncaught errors (e.g. Deepgram internal WebSocket timeouts) crashing the process
+  process.on('uncaughtException', (err) => {
+    console.error('⚠️  Uncaught Exception (server kept alive):', err.message);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error('⚠️  Unhandled Rejection (server kept alive):', reason);
+  });
+
   bootstrap();
 }
 

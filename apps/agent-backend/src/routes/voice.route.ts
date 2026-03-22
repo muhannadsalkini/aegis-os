@@ -65,6 +65,12 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         socket.send(JSON.stringify({ type: 'transcript', text, isFinal }));
       });
 
+      session.on('userMessage', ({ text }) => {
+        if (socket.readyState !== 1) return;
+        // Sent once when processUtterance fires — reliable regardless of trigger (speechFinal or silence timer)
+        socket.send(JSON.stringify({ type: 'user_message', text }));
+      });
+
       session.on('reply', ({ text }) => {
         if (socket.readyState !== 1) return;
         socket.send(JSON.stringify({ type: 'reply', text }));
@@ -75,6 +81,11 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         // Sentinel JSON frame: tells the client to reset PCM byte-alignment state
         // before the binary audio frames for the next sentence arrive.
         socket.send(JSON.stringify({ type: 'tts_start' }));
+      });
+
+      session.on('toolCall', ({ toolName, args, result }) => {
+        if (socket.readyState !== 1) return;
+        socket.send(JSON.stringify({ type: 'tool_call', toolName, args, result }));
       });
 
       session.on('audioChunk', (chunk: Buffer) => {

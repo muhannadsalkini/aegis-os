@@ -4,9 +4,15 @@ export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error
 
 interface UseVoiceAgentProps {
   apiUrl: string;
+  /** Called once when the user's final transcript is confirmed */
+  onUserMessage?: (text: string) => void;
+  /** Called for each sentence the AI produces. isFirst=true on the opening sentence of a new turn. */
+  onAssistantSentence?: (text: string, isFirst: boolean) => void;
+  /** Called after each tool the AI executes */
+  onToolCall?: (toolName: string, args: unknown, result: unknown) => void;
 }
 
-export function useVoiceAgent({ apiUrl }: UseVoiceAgentProps) {
+export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onToolCall }: UseVoiceAgentProps) {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [partialTranscript, setPartialTranscript] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -26,6 +32,16 @@ export function useVoiceAgent({ apiUrl }: UseVoiceAgentProps) {
   const isPlayingRef = useRef(false);
   const serverIdleRef = useRef(false);
   const isAIActiveRef = useRef(false);
+  /** Tracks whether the next reply event is the first sentence of a new AI turn */
+  const isFirstSentenceRef = useRef(true);
+  /** Stable refs for callbacks so we never re-render just because a callback identity changed */
+  const onUserMessageRef = useRef(onUserMessage);
+  const onAssistantSentenceRef = useRef(onAssistantSentence);
+  const onToolCallRef = useRef(onToolCall);
+  // Keep refs in sync without triggering re-renders
+  onUserMessageRef.current = onUserMessage;
+  onAssistantSentenceRef.current = onAssistantSentence;
+  onToolCallRef.current = onToolCall;
 
   // Cleanup all audio resources
   const cleanup = useCallback(() => {
@@ -208,22 +224,34 @@ export function useVoiceAgent({ apiUrl }: UseVoiceAgentProps) {
           const msg = JSON.parse(e.data);
           console.log(`📩 Server event:`, msg);
           if (msg.type === 'transcript') {
-            setPartialTranscript(msg.text);
-            if (msg.isFinal) {
-              setPartialTranscript(''); // typically cleared when state shifts to thinking
-            }
+            // Partial speech — intentionally NOT shown in status bar.
+            // The committed user bubble is added via 'user_message' event below.
+            // (No UI update here — avoids showing half-words in the status bar)
+          } else if (msg.type === 'user_message') {
+            // Fired once when processUtterance starts — reliable for both
+            // speechFinal AND silence-timer triggered turns
+            onUserMessageRef.current?.(msg.text);
           } else if (msg.type === 'tts_start') {
             // A new ElevenLabs sentence stream is starting. Each sentence is an
             // independent PCM audio stream, so we MUST reset the leftover-byte cache
             // to avoid the first sample of this sentence being misaligned.
             pcmLeftoverRef.current = null;
           } else if (msg.type === 'reply') {
+            // Each reply event carries one sentence from the streaming AI response
+            const isFirst = isFirstSentenceRef.current;
+            isFirstSentenceRef.current = false;
+            // Show the current AI sentence in the status bar while speaking
             setPartialTranscript(msg.text);
+            onAssistantSentenceRef.current?.(msg.text, isFirst);
+          } else if (msg.type === 'tool_call') {
+            onToolCallRef.current?.(msg.toolName, msg.args, msg.result);
           } else if (msg.type === 'state') {
             if (msg.state === 'thinking') {
               // Unconditionally purge any leftover byte from a previous generation stream
               pcmLeftoverRef.current = null;
               isAIActiveRef.current = true;
+              // Reset so the next reply sentence is treated as the first
+              isFirstSentenceRef.current = true;
             } else if (msg.state === 'speaking') {
               isAIActiveRef.current = true;
             } else {

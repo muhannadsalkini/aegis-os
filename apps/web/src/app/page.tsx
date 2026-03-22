@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useVoiceAgent } from "../hooks/useVoiceAgent";
 import { MicButton } from "../components/voice/MicButton";
 import { VoiceWaveform } from "../components/voice/VoiceWaveform";
@@ -61,6 +61,37 @@ export default function TestConsole() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Voice message handlers — stable callbacks that drive voice turns into the chat
+  const handleUserMessage = useCallback((text: string) => {
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setToolCalls([]);   // clear tool cards for the new turn
+  }, []);
+
+  const handleAssistantSentence = useCallback((text: string, isFirst: boolean) => {
+    if (isFirst) {
+      // Open a new assistant bubble with the first sentence
+      setMessages(prev => [...prev, { role: 'assistant', content: text }]);
+    } else {
+      // Append sentence to the last assistant bubble (streaming effect)
+      setMessages(prev => {
+        if (prev.length === 0) return prev;
+        const last = prev[prev.length - 1];
+        if (last.role !== 'assistant') return prev;
+        return [
+          ...prev.slice(0, -1),
+          { ...last, content: last.content + ' ' + text },
+        ];
+      });
+    }
+  }, []);
+
+  const handleToolCall = useCallback((toolName: string, args: unknown, result: unknown) => {
+    setToolCalls(prev => [
+      ...prev,
+      { toolName, args: args as Record<string, unknown>, result },
+    ]);
+  }, []);
+
   // Voice capabilities
   const {
     voiceState,
@@ -69,7 +100,12 @@ export default function TestConsole() {
     startListening,
     stopSession,
     getByteFrequencyData,
-  } = useVoiceAgent({ apiUrl: API_URL });
+  } = useVoiceAgent({
+    apiUrl: API_URL,
+    onUserMessage: handleUserMessage,
+    onAssistantSentence: handleAssistantSentence,
+    onToolCall: handleToolCall,
+  });
 
   const isVoiceActive = voiceState !== 'idle';
 
@@ -169,7 +205,6 @@ export default function TestConsole() {
             </div>
             <div>
               <h1 className="font-semibold text-aegis-text">Aegis OS</h1>
-              <p className="text-xs text-aegis-textDim">Test Console • Phase 2</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -371,11 +406,11 @@ export default function TestConsole() {
             {/* Minimalist Floating Action Button for Voice */}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[5.5rem] flex items-center h-full py-1.5 pointer-events-none">
               <div className="pointer-events-auto h-full flex mt-1">
-                 <MicButton 
-                  state={voiceState} 
+                <MicButton
+                  state={voiceState}
                   onClick={isVoiceActive ? stopSession : startListening}
-                  disabled={isLoading} 
-                 />
+                  disabled={isLoading}
+                />
               </div>
             </div>
           </div>

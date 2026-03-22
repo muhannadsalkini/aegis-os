@@ -262,7 +262,11 @@ export class BaseAgent {
    * For tool calls: we still handle them, but we buffer the full output and
    * restart streaming after the tool results come back.
    */
-  async *chatStream(context: AgentContext, signal?: AbortSignal): AsyncGenerator<string> {
+  async *chatStream(
+    context: AgentContext,
+    signal?: AbortSignal,
+    onToolCall?: (toolName: string, args: unknown, result: unknown) => void,
+  ): AsyncGenerator<string> {
     const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: this.config.systemPrompt },
       ...context.messages,
@@ -370,6 +374,8 @@ export class BaseAgent {
         if (signal?.aborted) return;   // Check abort before each tool execution
         const toolArgs = JSON.parse(tc.args || '{}');
         const result = await executeTool(tc.name, toolArgs);
+        // Notify caller about this tool execution (for UI display)
+        onToolCall?.(tc.name, toolArgs, result);
         const toolMsg: ChatCompletionToolMessageParam = {
           role: 'tool',
           tool_call_id: tc.id,
@@ -378,6 +384,7 @@ export class BaseAgent {
         messages.push(toolMsg);
       }
     }
+
 
     throw new Error(`Agent exceeded maximum iterations (${MAX_ITERATIONS})`);
   }
