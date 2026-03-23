@@ -149,7 +149,10 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
       playbackTimerRef.current = setTimeout(() => {
         isPlayingRef.current = false;
         if (serverIdleRef.current) {
-          setVoiceState('idle');
+          // Backend uses `idle` to mean "AI finished, STT is ready".
+          // UI must show `listening` so the user understands voice mode is active.
+          setPartialTranscript('');
+          setVoiceState('listening');
         }
       }, msUntilFinished);
     }
@@ -270,10 +273,18 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
                }
             }
 
+            if (msg.state === 'listening') {
+              // We intentionally don't display STT partials in the status bar,
+              // so clear any previously shown assistant sentence.
+              setPartialTranscript('');
+            }
+
             if (msg.state === 'idle') {
               serverIdleRef.current = true;
               if (!isPlayingRef.current) {
-                setVoiceState('idle');
+                // If playback already ended, transition immediately.
+                setPartialTranscript('');
+                setVoiceState('listening');
               }
             } else {
               serverIdleRef.current = false;
