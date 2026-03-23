@@ -383,7 +383,7 @@ export default function TestConsole() {
             </div>
           )}
 
-          <div className="flex gap-3 relative">
+          <div className="flex gap-3 items-center">
             <textarea
               ref={inputRef}
               value={input}
@@ -394,6 +394,14 @@ export default function TestConsole() {
               rows={1}
               className="flex-1 bg-aegis-bg border border-aegis-border rounded-xl px-4 py-3 text-aegis-text placeholder:text-aegis-textDim focus:outline-none focus:border-aegis-accent/50 resize-none"
             />
+            {/* Inline voice button to keep alignment stable */}
+            <div className="shrink-0 flex items-center">
+              <MicButton
+                state={voiceState}
+                onClick={isVoiceActive ? stopSession : startListening}
+                disabled={isLoading}
+              />
+            </div>
             <div className="flex flex-col gap-2 shrink-0">
               <button
                 onClick={sendMessage}
@@ -402,16 +410,6 @@ export default function TestConsole() {
               >
                 {isLoading ? "..." : "Send"}
               </button>
-            </div>
-            {/* Minimalist Floating Action Button for Voice */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[5.5rem] flex items-center h-full py-1.5 pointer-events-none">
-              <div className="pointer-events-auto h-full flex mt-1">
-                <MicButton
-                  state={voiceState}
-                  onClick={isVoiceActive ? stopSession : startListening}
-                  disabled={isLoading}
-                />
-              </div>
             </div>
           </div>
           <p className="text-xs text-aegis-textDim mt-1 text-center">
