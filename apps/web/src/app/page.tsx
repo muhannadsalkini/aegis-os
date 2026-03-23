@@ -46,6 +46,7 @@ export default function TestConsole() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
+  const [isToolCallsOpen, setIsToolCallsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usage, setUsage] = useState<{
     promptTokens: number;
@@ -64,7 +65,8 @@ export default function TestConsole() {
   // Voice message handlers — stable callbacks that drive voice turns into the chat
   const handleUserMessage = useCallback((text: string) => {
     setMessages(prev => [...prev, { role: 'user', content: text }]);
-    setToolCalls([]);   // clear tool cards for the new turn
+    setToolCalls([]); // clear tool cards for the new turn
+    setIsToolCallsOpen(false);
   }, []);
 
   const handleAssistantSentence = useCallback((text: string, isFirst: boolean) => {
@@ -130,6 +132,7 @@ export default function TestConsole() {
     setIsLoading(true);
     setError(null);
     setToolCalls([]);
+    setIsToolCallsOpen(false);
 
     try {
       const response = await fetch(`${API_URL}/agents/chat`, {
@@ -183,6 +186,7 @@ export default function TestConsole() {
   const clearChat = () => {
     setMessages([]);
     setToolCalls([]);
+    setIsToolCallsOpen(false);
     setError(null);
     setUsage(null);
     setCostInfo(null);
@@ -208,10 +212,6 @@ export default function TestConsole() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="w-2 h-2 rounded-full bg-aegis-success animate-pulse"></span>
-              <span className="text-aegis-textDim">Backend Connected</span>
-            </div>
             <a
               href="/knowledge"
               className="px-3 py-1.5 text-xs rounded-md bg-aegis-accent/10 hover:bg-aegis-accent/20 text-aegis-accent border border-aegis-accent/30 hover:border-aegis-accent/50 transition-colors flex items-center gap-1.5"
@@ -265,10 +265,19 @@ export default function TestConsole() {
             </div>
           )}
 
-          {messages.map((message, index) => (
+          {(() => {
+            let lastAssistantIndex = -1;
+            for (let i = messages.length - 1; i >= 0; i--) {
+              if (messages[i].role === "assistant") {
+                lastAssistantIndex = i;
+                break;
+              }
+            }
+
+            return messages.map((message, index) => (
             <div
               key={index}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"
+              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"
                 }`}
             >
               <div
@@ -279,8 +288,83 @@ export default function TestConsole() {
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
+
+              {message.role === "assistant" &&
+                index === lastAssistantIndex &&
+                toolCalls.length > 0 && (
+                  <div className="max-w-[80%] w-full mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsToolCallsOpen(v => !v)}
+                      aria-expanded={isToolCallsOpen}
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2 border border-aegis-border bg-aegis-surface/50 rounded-xl hover:border-aegis-accent/50 transition-colors"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="text-aegis-accent">🔧</span>
+                        <span className="text-xs font-medium text-aegis-textDim uppercase tracking-wide">
+                          Tool calls
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-3">
+                        <span className="text-xs text-aegis-textDim">
+                          {toolCalls.length} {toolCalls.length === 1 ? "call" : "calls"}
+                        </span>
+                        <span className="text-aegis-textDim text-sm">
+                          {isToolCallsOpen ? "▾" : "▸"}
+                        </span>
+                      </span>
+                    </button>
+
+                    {isToolCallsOpen && (
+                      <div className="mt-2 space-y-2">
+                        {toolCalls.map((tool, idx) => (
+                          <div
+                            key={`${tool.toolName}-${idx}`}
+                            className="bg-aegis-bg border border-aegis-accent/30 rounded-xl p-3"
+                          >
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-aegis-accent">⚡</span>
+                                <span className="text-aegis-text font-semibold text-sm truncate font-mono">
+                                  {tool.toolName}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <details
+                                open
+                                className="bg-aegis-surface rounded-lg border border-aegis-border px-3 py-2"
+                              >
+                                <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
+                                  Args
+                                </summary>
+                                <pre className="text-xs text-aegis-text bg-aegis-bg rounded-md p-2 overflow-x-auto mt-2 font-mono">
+                                  {JSON.stringify(tool.args ?? {}, null, 2)}
+                                </pre>
+                              </details>
+
+                              <details
+                                open
+                                className="bg-aegis-surface rounded-lg border border-aegis-border px-3 py-2"
+                              >
+                                <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
+                                  Result
+                                </summary>
+                                <pre className="text-xs text-aegis-success bg-aegis-bg rounded-md p-2 overflow-x-auto mt-2 font-mono">
+                                  {JSON.stringify(tool.result, null, 2)}
+                                </pre>
+                              </details>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
-          ))}
+            ));
+          })()}
 
           {/* Loading State */}
           {isLoading && (
@@ -318,40 +402,6 @@ export default function TestConsole() {
             onRetryError={startListening}
           />
         </div>
-
-        {/* Tool Calls Panel */}
-        {toolCalls.length > 0 && (
-          <div className="border-t border-aegis-border bg-aegis-surface/50 p-4">
-            <h3 className="text-xs font-medium text-aegis-textDim mb-3 uppercase tracking-wide">
-              🔧 Tool Calls
-            </h3>
-            <div className="space-y-2">
-              {toolCalls.map((tool, index) => (
-                <div
-                  key={index}
-                  className="bg-aegis-bg border border-aegis-accent/30 rounded-lg p-3 font-mono text-sm"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-aegis-accent">⚡</span>
-                    <span className="text-aegis-text font-semibold">
-                      {tool.toolName}
-                    </span>
-                  </div>
-                  <div className="text-xs text-aegis-textDim mb-1">Args:</div>
-                  <pre className="text-xs text-aegis-text bg-aegis-surface rounded p-2 overflow-x-auto">
-                    {JSON.stringify(tool.args, null, 2)}
-                  </pre>
-                  <div className="text-xs text-aegis-textDim mt-2 mb-1">
-                    Result:
-                  </div>
-                  <pre className="text-xs text-aegis-success bg-aegis-surface rounded p-2 overflow-x-auto">
-                    {JSON.stringify(tool.result, null, 2)}
-                  </pre>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Usage Stats */}
         {(usage || costInfo) && (
