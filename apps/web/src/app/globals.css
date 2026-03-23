@@ -45,7 +45,7 @@ body {
 }
 
 .typing-cursor::after {
-  content: '▋';
+  content: '|';
   animation: blink 1s infinite;
   color: var(--accent);
 }

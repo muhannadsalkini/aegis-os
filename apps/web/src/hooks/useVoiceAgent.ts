@@ -202,7 +202,7 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
         // Fire data stream every 250ms
         mediaRecorder.ondataavailable = (e) => {
           if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            console.log(`🎤 Sending chunk: ${e.data.size} bytes`);
+            console.log(`Sending chunk: ${e.data.size} bytes`);
             ws.send(e.data);
           }
         };
@@ -217,7 +217,7 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
              // Drop latency/jitter ghost chunks that arrive after the session was forcefully cut
              return;
           }
-          console.log(`🔊 Received TTS chunk: ${e.data.byteLength} bytes`);
+          console.log(`Received TTS chunk: ${e.data.byteLength} bytes`);
           queueAudioChunk(e.data);
           return;
         }
@@ -225,7 +225,7 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
         // JSON frame = Server Event
         try {
           const msg = JSON.parse(e.data);
-          console.log(`📩 Server event:`, msg);
+          console.log(`Server event:`, msg);
           if (msg.type === 'transcript') {
             // Partial speech — intentionally NOT shown in status bar.
             // The committed user bubble is added via 'user_message' event below.

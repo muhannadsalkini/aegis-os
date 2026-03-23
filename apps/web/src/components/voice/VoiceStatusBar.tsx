@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, Volume2 } from "lucide-react";
 
 interface VoiceStatusBarProps {
   state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
@@ -15,7 +16,7 @@ export function VoiceStatusBar({ state, partialTranscript, errorMsg, onStop, onR
     return (
       <div className="bg-aegis-error/10 border border-aegis-error/30 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
         <div className="flex items-center gap-3">
-          <span className="text-xl">⚠️</span>
+          <AlertTriangle className="w-5 h-5 text-aegis-error" aria-hidden="true" />
           <div>
             <h3 className="text-sm font-semibold text-aegis-error">Voice Connection Error</h3>
             <p className="text-xs text-aegis-error/80 mt-0.5">{errorMsg || 'Something went wrong.'}</p>
@@ -49,7 +50,7 @@ export function VoiceStatusBar({ state, partialTranscript, errorMsg, onStop, onR
           )}
           {state === 'speaking' && (
             <>
-              <span className="text-lg">🔊</span>
+              <Volume2 className="w-5 h-5 text-aegis-accent" aria-hidden="true" />
               <span className="text-sm font-medium text-aegis-text">Speaking</span>
             </>
           )}

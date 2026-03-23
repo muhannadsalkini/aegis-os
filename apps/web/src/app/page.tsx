@@ -1,6 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUpRight,
+  BookOpen,
+  Bot,
+  ChevronDown,
+  ChevronRight,
+  Coins,
+  Database,
+  Zap,
+  Wrench,
+} from "lucide-react";
 import { useVoiceAgent } from "../hooks/useVoiceAgent";
 import { MicButton } from "../components/voice/MicButton";
 import { VoiceWaveform } from "../components/voice/VoiceWaveform";
@@ -110,6 +123,46 @@ export default function TestConsole() {
   });
 
   const isVoiceActive = voiceState !== 'idle';
+  const apiHost = (() => {
+    try {
+      return new URL(API_URL).host;
+    } catch {
+      return "local";
+    }
+  })();
+
+  const voicePill = (() => {
+    switch (voiceState) {
+      case "listening":
+        return (
+          <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] border border-aegis-error/30 bg-aegis-error/10 text-aegis-error">
+            <span className="w-1.5 h-1.5 rounded-full bg-aegis-error animate-pulse" />
+            Listening
+          </span>
+        );
+      case "thinking":
+        return (
+          <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] border border-aegis-accent/25 bg-aegis-accent/10 text-aegis-accent">
+            <span className="w-1.5 h-1.5 rounded-full bg-aegis-accent animate-pulse" />
+            Processing
+          </span>
+        );
+      case "speaking":
+        return (
+          <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] border border-aegis-accent/30 bg-aegis-accent/10 text-aegis-accent">
+            <span className="w-1.5 h-1.5 rounded-full bg-aegis-accent" />
+            Speaking
+          </span>
+        );
+      case "error":
+        return (
+          <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] border border-aegis-error/40 bg-aegis-error/15 text-aegis-error">
+            <span className="w-1.5 h-1.5 rounded-full bg-aegis-error animate-pulse" />
+            Voice error
+          </span>
+        );
+    }
+  })();
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -201,27 +254,30 @@ export default function TestConsole() {
   return (
     <div className="min-h-screen flex flex-col bg-aegis-bg">
       {/* Header */}
-      <header className="border-b border-aegis-border bg-aegis-surface/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="border-b border-aegis-border/60 bg-aegis-surface/40 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-aegis-accent to-aegis-accentDim flex items-center justify-center">
-              <span className="text-aegis-bg font-bold text-sm">⚡</span>
+              <Zap className="w-4 h-4 text-aegis-bg" aria-hidden="true" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="font-semibold text-aegis-text">Aegis OS</h1>
+              <p className="text-xs text-aegis-textDim mt-0.5">Agent Console</p>
             </div>
+            <div className="hidden sm:block">{voicePill}</div>
           </div>
           <div className="flex items-center gap-3">
             <a
               href="/knowledge"
               className="px-3 py-1.5 text-xs rounded-md bg-aegis-accent/10 hover:bg-aegis-accent/20 text-aegis-accent border border-aegis-accent/30 hover:border-aegis-accent/50 transition-colors flex items-center gap-1.5"
             >
-              <span>📚</span>
+              <BookOpen className="w-4 h-4" aria-hidden="true" />
               <span>Knowledge</span>
             </a>
             <button
               onClick={clearChat}
-              className="px-3 py-1.5 text-xs rounded-md bg-aegis-border hover:bg-aegis-border/80 text-aegis-textDim hover:text-aegis-text transition-colors"
+              disabled={messages.length === 0}
+              className="px-3 py-1.5 text-xs rounded-md bg-aegis-border hover:bg-aegis-border/80 text-aegis-textDim hover:text-aegis-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Clear
             </button>
@@ -230,21 +286,25 @@ export default function TestConsole() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+      <main className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div
+          className="relative flex-1 overflow-y-auto p-4 space-y-4 rounded-2xl border border-aegis-border/60 bg-aegis-surface/30 shadow-[0_0_0_1px_rgba(30,30,46,0.45)] mt-4"
+          role="log"
+          aria-live="polite"
+        >
           {messages.length === 0 && (
-            <div className="text-center py-20">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-aegis-surface border border-aegis-border mb-4">
-                <span className="text-3xl">🤖</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-aegis-surface/60 border border-aegis-border/70 mb-4">
+                <Bot className="w-7 h-7 text-aegis-accent" aria-hidden="true" />
               </div>
-              <h2 className="text-xl font-semibold text-aegis-text mb-2">
-                Test Your Agent
+              <h2 className="text-xl font-semibold text-aegis-text mb-2 tracking-tight">
+                Agent Console
               </h2>
-              <p className="text-aegis-textDim max-w-md mx-auto mb-6">
-                Test your agent with math, weather, web search, and file operations!
+              <p className="text-aegis-textDim max-w-lg mx-auto mb-6 leading-relaxed">
+                Send a prompt (or use voice) to test tools, workflows, and responses.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center max-w-2xl">
+              <div className="w-full max-w-2xl mx-auto flex flex-wrap gap-2 justify-center items-center">
                 {[
                   "What is 25 * 48?",
                   "What's the weather in Tokyo?",
@@ -256,7 +316,7 @@ export default function TestConsole() {
                   <button
                     key={suggestion}
                     onClick={() => setInput(suggestion)}
-                    className="px-3 py-2 text-sm rounded-lg bg-aegis-surface border border-aegis-border hover:border-aegis-accent/50 text-aegis-textDim hover:text-aegis-text transition-all"
+                    className="px-3 py-2 text-sm rounded-lg bg-aegis-surface/50 border border-aegis-border/70 hover:border-aegis-accent/60 hover:bg-aegis-surface text-aegis-textDim hover:text-aegis-text transition-all"
                   >
                     {suggestion}
                   </button>
@@ -277,16 +337,18 @@ export default function TestConsole() {
             return messages.map((message, index) => (
             <div
               key={index}
-              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"
-                }`}
+              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
-                  ? "bg-aegis-accent text-aegis-bg rounded-br-md"
-                  : "bg-aegis-surface border border-aegis-border rounded-bl-md"
-                  }`}
+                className={`max-w-[80%] rounded-2xl px-4 py-3 border shadow-sm ${
+                  message.role === "user"
+                    ? "bg-aegis-accent text-aegis-bg border-aegis-accent/35 rounded-br-md"
+                    : "bg-aegis-surface border-aegis-border/60 text-aegis-text rounded-bl-md"
+                }`}
               >
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                  {message.content}
+                </p>
               </div>
 
               {message.role === "assistant" &&
@@ -297,10 +359,12 @@ export default function TestConsole() {
                       type="button"
                       onClick={() => setIsToolCallsOpen(v => !v)}
                       aria-expanded={isToolCallsOpen}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2 border border-aegis-border bg-aegis-surface/50 rounded-xl hover:border-aegis-accent/50 transition-colors"
+                      className={`w-full flex items-center justify-between gap-3 px-3 py-2 border border-aegis-border/60 bg-aegis-surface/40 rounded-xl hover:border-aegis-accent/60 transition-colors ${
+                        !isToolCallsOpen ? "tool-pulse" : ""
+                      }`}
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="text-aegis-accent">🔧</span>
+                        <Wrench className="w-4 h-4 text-aegis-accent" aria-hidden="true" />
                         <span className="text-xs font-medium text-aegis-textDim uppercase tracking-wide">
                           Tool calls
                         </span>
@@ -309,9 +373,11 @@ export default function TestConsole() {
                         <span className="text-xs text-aegis-textDim">
                           {toolCalls.length} {toolCalls.length === 1 ? "call" : "calls"}
                         </span>
-                        <span className="text-aegis-textDim text-sm">
-                          {isToolCallsOpen ? "▾" : "▸"}
-                        </span>
+                        {isToolCallsOpen ? (
+                          <ChevronDown className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                        )}
                       </span>
                     </button>
 
@@ -320,11 +386,11 @@ export default function TestConsole() {
                         {toolCalls.map((tool, idx) => (
                           <div
                             key={`${tool.toolName}-${idx}`}
-                            className="bg-aegis-bg border border-aegis-accent/30 rounded-xl p-3"
+                            className="bg-aegis-bg/40 border border-aegis-accent/25 rounded-xl p-3 backdrop-blur-sm"
                           >
                             <div className="flex items-center justify-between gap-3 mb-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-aegis-accent">⚡</span>
+                                <Zap className="w-4 h-4 text-aegis-accent" aria-hidden="true" />
                                 <span className="text-aegis-text font-semibold text-sm truncate font-mono">
                                   {tool.toolName}
                                 </span>
@@ -334,24 +400,24 @@ export default function TestConsole() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <details
                                 open
-                                className="bg-aegis-surface rounded-lg border border-aegis-border px-3 py-2"
+                                className="bg-aegis-surface/40 rounded-lg border border-aegis-border/60 px-3 py-2"
                               >
                                 <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
                                   Args
                                 </summary>
-                                <pre className="text-xs text-aegis-text bg-aegis-bg rounded-md p-2 overflow-x-auto mt-2 font-mono">
+                                <pre className="text-xs text-aegis-text bg-aegis-bg/50 border border-aegis-border/60 rounded-md p-2 overflow-x-auto mt-2 font-mono">
                                   {JSON.stringify(tool.args ?? {}, null, 2)}
                                 </pre>
                               </details>
 
                               <details
                                 open
-                                className="bg-aegis-surface rounded-lg border border-aegis-border px-3 py-2"
+                                className="bg-aegis-surface/40 rounded-lg border border-aegis-border/60 px-3 py-2"
                               >
                                 <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
                                   Result
                                 </summary>
-                                <pre className="text-xs text-aegis-success bg-aegis-bg rounded-md p-2 overflow-x-auto mt-2 font-mono">
+                                <pre className="text-xs text-aegis-success bg-aegis-bg/50 border border-aegis-border/60 rounded-md p-2 overflow-x-auto mt-2 font-mono">
                                   {JSON.stringify(tool.result, null, 2)}
                                 </pre>
                               </details>
@@ -369,7 +435,7 @@ export default function TestConsole() {
           {/* Loading State */}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-aegis-surface border border-aegis-border rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="bg-aegis-surface/40 border border-aegis-border/60 rounded-2xl rounded-bl-md px-4 py-3 tool-pulse">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
                     <span className="w-2 h-2 rounded-full bg-aegis-accent animate-bounce [animation-delay:-0.3s]"></span>
@@ -384,8 +450,11 @@ export default function TestConsole() {
 
           {/* Error Display */}
           {error && (
-            <div className="bg-aegis-error/10 border border-aegis-error/30 rounded-lg p-4">
-              <p className="text-aegis-error text-sm">❌ {error}</p>
+            <div className="bg-aegis-error/10 border border-aegis-error/40 rounded-2xl p-4">
+              <p className="text-aegis-error text-sm leading-relaxed flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <span>{error}</span>
+              </p>
             </div>
           )}
 
@@ -393,39 +462,55 @@ export default function TestConsole() {
         </div>
 
         {/* Voice Status Bar */}
-        <div className="px-4 pb-2">
-          <VoiceStatusBar
-            state={voiceState}
-            partialTranscript={partialTranscript}
-            errorMsg={voiceError}
-            onStop={stopSession}
-            onRetryError={startListening}
-          />
-        </div>
+        {/* <VoiceStatusBar
+          state={voiceState}
+          partialTranscript={partialTranscript}
+          errorMsg={voiceError}
+          onStop={stopSession}
+          onRetryError={startListening}
+        /> */}
 
         {/* Usage Stats */}
         {(usage || costInfo) && (
-          <div className="border-t border-aegis-border px-4 py-2 flex flex-wrap items-center gap-4 text-xs text-aegis-textDim">
+          <div className="mt-4 px-4 py-3 rounded-2xl border border-aegis-border/60 bg-aegis-surface/20 flex flex-wrap items-center gap-4 text-xs text-aegis-textDim">
             {usage && (
               <>
-                <span>📊 Tokens: {usage.totalTokens}</span>
-                <span>↗️ Prompt: {usage.promptTokens}</span>
-                <span>↙️ Completion: {usage.completionTokens}</span>
+                <span className="inline-flex items-center gap-2">
+                  <Database className="w-4 h-4 text-aegis-accent/80" aria-hidden="true" />
+                  Tokens: {usage.totalTokens}
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <ArrowUpRight className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                  Prompt: {usage.promptTokens}
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <ArrowDown className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                  Completion: {usage.completionTokens}
+                </span>
               </>
             )}
 
             {costInfo && (
               <>
                 <div className="w-px h-3 bg-aegis-border mx-1"></div>
-                <span className="text-aegis-accent font-medium">💰 Cost: {formatCost(costInfo.totalCost)}</span>
-                <span title="Model used">🤖 {costInfo.model}</span>
+                <span className="inline-flex items-center gap-2 text-aegis-accent font-medium">
+                  <Coins className="w-4 h-4" aria-hidden="true" />
+                  Cost: {formatCost(costInfo.totalCost)}
+                </span>
+                <span
+                  title="Model used"
+                  className="inline-flex items-center gap-2"
+                >
+                  <Bot className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                  {costInfo.model}
+                </span>
               </>
             )}
           </div>
         )}
 
         {/* Input Area */}
-        <div className="border-t border-aegis-border bg-aegis-surface/50 p-4 shrink-0 transition-all flex flex-col gap-3">
+        <div className="mt-4 rounded-2xl border border-aegis-border/60 bg-aegis-surface/30 p-4 shrink-0 transition-all flex flex-col gap-3">
           {/* Waveform Visualization (Dynamic height based on state) */}
           {isVoiceActive && voiceState !== 'error' && (
             <div className="w-full animation-in slide-in-from-bottom-2 fade-in">
@@ -442,7 +527,7 @@ export default function TestConsole() {
               disabled={isVoiceActive || isLoading}
               placeholder={isVoiceActive ? "Voice mode active..." : "Ask your agent something..."}
               rows={1}
-              className="flex-1 bg-aegis-bg border border-aegis-border rounded-xl px-4 py-3 text-aegis-text placeholder:text-aegis-textDim focus:outline-none focus:border-aegis-accent/50 resize-none"
+              className="flex-1 bg-aegis-bg border border-aegis-border/70 rounded-xl px-4 py-3 text-aegis-text placeholder:text-aegis-textDim text-sm leading-relaxed focus:outline-none focus:border-aegis-accent/50 resize-none"
             />
             {/* Inline voice button to keep alignment stable */}
             <div className="shrink-0 flex items-center">
@@ -456,16 +541,29 @@ export default function TestConsole() {
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim() || isVoiceActive}
-                className="px-6 py-3 bg-aegis-accent text-aegis-bg font-semibold rounded-xl hover:bg-aegis-accentDim disabled:opacity-50 disabled:cursor-not-allowed transition-colors grow"
+                className="px-6 py-3 bg-aegis-accent text-aegis-bg font-semibold rounded-xl hover:bg-aegis-accentDim disabled:opacity-50 disabled:cursor-not-allowed transition-colors grow inline-flex items-center justify-center gap-2"
               >
                 {isLoading ? "..." : "Send"}
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                </svg>
               </button>
             </div>
           </div>
-          <p className="text-xs text-aegis-textDim mt-1 text-center">
-            Press Enter to send • Shift+Enter for new line
-          </p>
         </div>
+          <p className="text-xs text-aegis-textDim my-1 text-center">
+            Press Enter to send | Shift+Enter for new line
+          </p>
       </main>
     </div>
   );
