@@ -301,7 +301,7 @@ export default function TestConsole() {
               <h2 className="text-xl font-semibold text-aegis-text mb-2 tracking-tight">
                 Agent Console
               </h2>
-              <p className="text-aegis-textDim max-w-lg mx-auto mb-6 leading-relaxed">
+              <p className="text-aegis-textDim max-w-xl mx-auto mb-6 leading-relaxed">
                 Send a prompt (or use voice) to test tools, workflows, and responses.
               </p>
               <div className="w-full max-w-2xl mx-auto flex flex-wrap gap-2 justify-center items-center">
@@ -335,100 +335,98 @@ export default function TestConsole() {
             }
 
             return messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
-            >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 border shadow-sm ${
-                  message.role === "user"
-                    ? "bg-aegis-accent text-aegis-bg border-aegis-accent/35 rounded-br-md"
-                    : "bg-aegis-surface border-aegis-border/60 text-aegis-text rounded-bl-md"
-                }`}
+                key={index}
+                className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
               >
-                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                  {message.content}
-                </p>
-              </div>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 border shadow-sm ${message.role === "user"
+                      ? "bg-aegis-accent text-aegis-bg border-aegis-accent/35 rounded-br-md"
+                      : "bg-aegis-surface border-aegis-border/60 text-aegis-text rounded-bl-md"
+                    }`}
+                >
+                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                    {message.content}
+                  </p>
+                </div>
 
-              {message.role === "assistant" &&
-                index === lastAssistantIndex &&
-                toolCalls.length > 0 && (
-                  <div className="max-w-[80%] w-full mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsToolCallsOpen(v => !v)}
-                      aria-expanded={isToolCallsOpen}
-                      className={`w-full flex items-center justify-between gap-3 px-3 py-2 border border-aegis-border/60 bg-aegis-surface/40 rounded-xl hover:border-aegis-accent/60 transition-colors ${
-                        !isToolCallsOpen ? "tool-pulse" : ""
-                      }`}
-                    >
-                      <span className="flex items-center gap-2 min-w-0">
-                        <Wrench className="w-4 h-4 text-aegis-accent" aria-hidden="true" />
-                        <span className="text-xs font-medium text-aegis-textDim uppercase tracking-wide">
-                          Tool calls
+                {message.role === "assistant" &&
+                  index === lastAssistantIndex &&
+                  toolCalls.length > 0 && (
+                    <div className="max-w-[80%] w-full mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsToolCallsOpen(v => !v)}
+                        aria-expanded={isToolCallsOpen}
+                        className={`w-full flex items-center justify-between gap-3 px-3 py-2 border border-aegis-border/60 bg-aegis-surface/40 rounded-xl hover:border-aegis-accent/60 transition-colors ${!isToolCallsOpen ? "tool-pulse" : ""
+                          }`}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <Wrench className="w-4 h-4 text-aegis-accent" aria-hidden="true" />
+                          <span className="text-xs font-medium text-aegis-textDim uppercase tracking-wide">
+                            Tool calls
+                          </span>
                         </span>
-                      </span>
-                      <span className="flex items-center gap-3">
-                        <span className="text-xs text-aegis-textDim">
-                          {toolCalls.length} {toolCalls.length === 1 ? "call" : "calls"}
+                        <span className="flex items-center gap-3">
+                          <span className="text-xs text-aegis-textDim">
+                            {toolCalls.length} {toolCalls.length === 1 ? "call" : "calls"}
+                          </span>
+                          {isToolCallsOpen ? (
+                            <ChevronDown className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
+                          )}
                         </span>
-                        {isToolCallsOpen ? (
-                          <ChevronDown className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-aegis-textDim" aria-hidden="true" />
-                        )}
-                      </span>
-                    </button>
+                      </button>
 
-                    {isToolCallsOpen && (
-                      <div className="mt-2 space-y-2">
-                        {toolCalls.map((tool, idx) => (
-                          <div
-                            key={`${tool.toolName}-${idx}`}
-                            className="bg-aegis-bg/40 border border-aegis-accent/25 rounded-xl p-3 backdrop-blur-sm"
-                          >
-                            <div className="flex items-center justify-between gap-3 mb-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Zap className="w-4 h-4 text-aegis-accent" aria-hidden="true" />
-                                <span className="text-aegis-text font-semibold text-sm truncate font-mono">
-                                  {tool.toolName}
-                                </span>
+                      {isToolCallsOpen && (
+                        <div className="mt-2 space-y-2">
+                          {toolCalls.map((tool, idx) => (
+                            <div
+                              key={`${tool.toolName}-${idx}`}
+                              className="bg-aegis-bg/40 border border-aegis-accent/25 rounded-xl p-3 backdrop-blur-sm"
+                            >
+                              <div className="flex items-center justify-between gap-3 mb-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Zap className="w-4 h-4 text-aegis-accent" aria-hidden="true" />
+                                  <span className="text-aegis-text font-semibold text-sm truncate font-mono">
+                                    {tool.toolName}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <details
+                                  open
+                                  className="bg-aegis-surface/40 rounded-lg border border-aegis-border/60 px-3 py-2"
+                                >
+                                  <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
+                                    Args
+                                  </summary>
+                                  <pre className="text-xs text-aegis-text bg-aegis-bg/50 border border-aegis-border/60 rounded-md p-2 overflow-x-auto mt-2 font-mono">
+                                    {JSON.stringify(tool.args ?? {}, null, 2)}
+                                  </pre>
+                                </details>
+
+                                <details
+                                  open
+                                  className="bg-aegis-surface/40 rounded-lg border border-aegis-border/60 px-3 py-2"
+                                >
+                                  <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
+                                    Result
+                                  </summary>
+                                  <pre className="text-xs text-aegis-success bg-aegis-bg/50 border border-aegis-border/60 rounded-md p-2 overflow-x-auto mt-2 font-mono">
+                                    {JSON.stringify(tool.result, null, 2)}
+                                  </pre>
+                                </details>
                               </div>
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <details
-                                open
-                                className="bg-aegis-surface/40 rounded-lg border border-aegis-border/60 px-3 py-2"
-                              >
-                                <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
-                                  Args
-                                </summary>
-                                <pre className="text-xs text-aegis-text bg-aegis-bg/50 border border-aegis-border/60 rounded-md p-2 overflow-x-auto mt-2 font-mono">
-                                  {JSON.stringify(tool.args ?? {}, null, 2)}
-                                </pre>
-                              </details>
-
-                              <details
-                                open
-                                className="bg-aegis-surface/40 rounded-lg border border-aegis-border/60 px-3 py-2"
-                              >
-                                <summary className="cursor-pointer select-none text-xs font-medium text-aegis-textDim flex items-center gap-2">
-                                  Result
-                                </summary>
-                                <pre className="text-xs text-aegis-success bg-aegis-bg/50 border border-aegis-border/60 rounded-md p-2 overflow-x-auto mt-2 font-mono">
-                                  {JSON.stringify(tool.result, null, 2)}
-                                </pre>
-                              </details>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+              </div>
             ));
           })()}
 
@@ -561,9 +559,9 @@ export default function TestConsole() {
             </div>
           </div>
         </div>
-          <p className="text-xs text-aegis-textDim my-1 text-center">
-            Press Enter to send | Shift+Enter for new line
-          </p>
+        <p className="text-xs text-aegis-textDim my-1 text-center">
+          Press Enter to send | Shift+Enter for new line
+        </p>
       </main>
     </div>
   );

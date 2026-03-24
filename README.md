@@ -1,10 +1,10 @@
-# 🛡️ Aegis OS — Your AI Agent Operating System
+# 🛡️ Aegis OS - Your AI Agent Operating System
 
-> Build your own AI agents with tools, RAG knowledgebases, MCP support, and real-time streaming.
+> Your own AI agents with tools, RAG knowledgebases, MCP support, and real-time streaming.
 
 ## 🎯 What is Aegis OS?
 
-Aegis OS is a **learning-focused project** that teaches you how to build AI agents from scratch. Think of it as your personal Copilot Studio, but cooler.
+Think of it as your personal Copilot Studio, but cooler.
 
 By the end of this project, you'll understand:
 - ✅ **Agents** — How LLMs become autonomous workers
@@ -13,20 +13,7 @@ By the end of this project, you'll understand:
 - ✅ **Streaming** — How to make responses feel alive and real-time
 - ✅ **MCP** — Model Context Protocol for OS-level tool access
 - ✅ **Multi-agent systems** — Agents collaborating together
-
----
-
-## 📚 Learning Roadmap
-
-| Phase | Focus | Status |
-|-------|-------|--------|
-| 1️⃣ | **Foundations** — LLM function calling, first tool | ✅ Complete |
-| 2️⃣ | **Tooling Mastery** — 6 tools, safety patterns | ✅ Complete |
-| 3️⃣ | **RAG & Knowledgebases** — Embeddings, chunking, retrieval | ✅ Complete |
-| 4️⃣ | **Agent Types** — Researcher, Planner, Orchestrator | 🔜 Upcoming |
-| 5️⃣ | **MCP Integration** — Model Context Protocol | 🔜 Upcoming |
-| 6️⃣ | **Streaming Everything** — Real-time UI | 🔜 Upcoming |
-| 7️⃣ | **Final Assembly** — Full Aegis OS deployment | 🔜 Upcoming |
+- ✅ **Voice Interaction** — Real-time speech-to-text (STT) and text-to-speech (TTS)
 
 ---
 
@@ -34,13 +21,13 @@ By the end of this project, you'll understand:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          FRONTEND                                │
+│                          FRONTEND                               │
 │                     Next.js 15 Dashboard                        │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ tRPC / HTTPS / WebSocket
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    AEGIS OS — AGENT BACKEND                      │
+│                    AEGIS OS — AGENT BACKEND                     │
 │                  Node.js (Fastify) + OpenAI SDK                 │
 ├─────────────────────────────────────────────────────────────────┤
 │  Agent Orchestrator  ←→  Agent Registry (configs, tools)        │
@@ -53,8 +40,11 @@ By the end of this project, you'll understand:
 │         ↓                  KNOWLEDGEBASE                        │
 │   RAG PIPELINE             (Supabase/pgvector)                  │
 ├─────────────────────────────────────────────────────────────────┤
-│              STREAMING LAYER (SSE / WebSocket)                   │
+│              STREAMING LAYER (SSE / WebSocket)                  │
 │          Live tokens • Tool calls • Tool results                │
+├─────────────────────────────────────────────────────────────────┤
+│             VOICE INTEGRATION (Deepgram / ElevenLabs)           │
+│          Real-time STT (Listening) • TTS (Speaking)             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -71,6 +61,7 @@ By the end of this project, you'll understand:
 | **RAG** | text-embedding-3-large, LangChain |
 | **Protocol** | MCP (Model Context Protocol) |
 | **Communication** | tRPC, WebSocket, SSE |
+| **Voice** | Deepgram (STT), ElevenLabs (TTS) |
 
 ---
 
@@ -115,6 +106,10 @@ aegis-os/
 │           │   └── http/fetch.ts
 │           ├── routes/         # API endpoints
 │           ├── utils/          # Validation & HTTP helpers
+│           ├── voice/          # Real-time Voice Session & Providers
+│           │   ├── providers/  # Deepgram STT & ElevenLabs TTS
+│           │   ├── voice.config.ts # API configurations
+│           │   └── voice.session.ts # WS session orchestrator
 │           └── types/          # TypeScript definitions
 ├── docs/                       # Learning notes & diagrams
 │   ├── phase-1-foundations/
@@ -181,65 +176,22 @@ curl -X POST http://localhost:3001/tools/calculator/test \
 
 ---
 
-## 📖 Phase 1: Foundations ✅
+## 🗣️ Voice Integration
 
-**Goal:** Understand how LLMs do function calling
+Aegis OS supports real-time, low-latency voice interactions through its dedicated WebSockets pipeline (`/voice/ws`).
 
-### What You Learned:
-1. **Function Calling** — How LLMs decide when and how to use tools
-2. **Tool Schema** — JSON Schema format for defining tool inputs
-3. **Tool Execution** — How to run tools and feed results back to the model
-4. **The Agent Loop** — Iterating until the LLM has a final answer
-
-### Artifact:
-A chat agent that can call a calculator tool during conversation.
-
----
-
-## 📖 Phase 2: Tooling Mastery ✅
-
-**Goal:** Build real-world tools with safety patterns
-
-### What You Learned:
-1. **Tool Architecture** — Designing robust, reusable tools
-2. **External APIs** — Integrating weather, search, and HTTP
-3. **Filesystem Access** — Safe file read/write with sandboxing
-4. **Input Validation** — Protecting against malicious inputs
-5. **Error Handling** — Graceful failures with informative messages
-
-### Artifacts:
-- 6 production-ready tools
-- Validation utilities
-- Safe HTTP client
-
----
-
-## 📝 Learning Notes
-
-Each phase includes detailed documentation:
-
-- `docs/phase-1-foundations/README.md` — Function calling deep dive
-- `docs/phase-1-foundations/glossary.md` — AI terminology reference
-- `docs/phase-2-tools/README.md` — Tool design patterns & safety
+### Key Components:
+- **STT (Speech-to-Text)**: Deepgram (`nova-2` model) ensures split-second transcription and silence detection.
+- **TTS (Text-to-Speech)**: ElevenLabs (`eleven_turbo_v2_5` model) delivers rapid, human-like audio streaming.
+- **`VoiceSession` Manager**: Orchestrates real-time state transitions (`listening` ↔ `thinking` ↔ `speaking`) and gracefully handles user barge-ins (interrupting the AI mid-sentence).
+- **Concurrent Execution**: Audio streaming runs concurrently with the Agent's reasoning loop; speech responses are synthesized on-the-fly, sentence-by-sentence as tokens are generated.
 
 ---
 
 ## 🤝 Contributing
 
-This is a learning project! Feel free to:
+Feel free to:
 - Add more tools
 - Improve documentation
 - Suggest better patterns
 - Share your learnings
-
----
-
-## 📜 License
-
-MIT License — Learn, build, and ship!
-
----
-
-<p align="center">
-  <strong>Built with 💜 to understand AI agents from the ground up</strong>
-</p>
