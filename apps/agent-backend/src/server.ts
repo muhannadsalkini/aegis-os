@@ -25,6 +25,13 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import { env } from './core/config/env.js';
+
+if (env.NODE_ENV === 'production') {
+  console.log = function () {};
+  console.info = function () {};
+  console.warn = function () {};
+  console.debug = function () {};
+}
 import { agentRoutes } from './modules/agents/agent.route.js';
 import { toolRoutes } from './modules/tools/tools.route.js';
 import { knowledgeRoutes } from './modules/knowledge/knowledge.route.js';
@@ -44,7 +51,7 @@ export async function buildApp(): Promise<FastifyInstance> {
           colorize: true,
         },
       },
-    } : true,
+    } : false,
   });
 
   // Register CORS for frontend access
