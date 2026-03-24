@@ -114,6 +114,67 @@ export async function agentRoutes(fastify: FastifyInstance) {
   });
   
   /**
+   * POST /agents/chat/stream
+   * Stream a chat response via Server-Sent Events (SSE)
+   *
+   * Each SSE message is one of:
+   *   data: {"type":"chunk","text":"..."}      — text token
+   *   data: {"type":"tool","name":"...","args":{...},"result":{...}}  — tool call
+   *   data: {"type":"done"}                    — stream finished
+   *   data: {"type":"error","message":"..."}   — error
+   */
+  fastify.post('/agents/chat/stream', async (request: FastifyRequest, reply: FastifyReply) => {
+    let body: ChatRequest;
+    try {
+      body = chatRequestSchema.parse(request.body);
+    } catch (error) {
+      return reply.status(400).send({ success: false, error: 'Invalid request format' });
+    }
+
+    const agent = getDefaultAgent();
+
+    // Set SSE headers
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+    reply.raw.flushHeaders?.();
+
+    const send = (payload: object) => {
+      reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    const lastMessage = body.messages[body.messages.length - 1];
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📨 [STREAM] Incoming: "${lastMessage?.content}"`);
+
+    try {
+      const onToolCall = (toolName: string, args: unknown, result: unknown) => {
+        send({ type: 'tool', name: toolName, args, result });
+      };
+
+      const stream = agent.chatStream(
+        { messages: body.messages as import('../types/agent.js').Message[] },
+        undefined,
+        onToolCall,
+        { raw: true }
+      );
+
+      for await (const chunk of stream) {
+        send({ type: 'chunk', text: chunk });
+      }
+
+      send({ type: 'done' });
+      console.log(`✅ [STREAM] Complete`);
+    } catch (err) {
+      console.error('❌ [STREAM] Error:', err);
+      send({ type: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      reply.raw.end();
+    }
+  });
+
+  /**
    * POST /agents/:id/chat
    * Chat with a specific agent
    */

@@ -181,7 +181,8 @@ export default function TestConsole() {
     const userMessage: Message = { role: "user", content: input.trim() };
     const newMessages = [...messages, userMessage];
 
-    setMessages(newMessages);
+    // Add user message + an empty assistant placeholder immediately
+    setMessages([...newMessages, { role: "assistant", content: "" }]);
     setInput("");
     setIsLoading(true);
     setError(null);
@@ -189,7 +190,7 @@ export default function TestConsole() {
     setIsToolCallsOpen(false);
 
     try {
-      const response = await fetch(`${API_URL}/agents/chat`, {
+      const response = await fetch(`${API_URL}/agents/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -200,24 +201,57 @@ export default function TestConsole() {
         }),
       });
 
-      const data: ChatResponse = await response.json();
+      if (!response.ok || !response.body) {
+        throw new Error(`Server error: ${response.status}`);
+      }
 
-      if (data.success && data.data) {
-        setMessages([
-          ...newMessages,
-          { role: "assistant", content: data.data.content },
-        ]);
-        if (data.data.toolCalls) {
-          setToolCalls(data.data.toolCalls);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE lines are separated by \n\n; process all complete events
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? ""; // keep the incomplete tail
+
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice("data: ".length);
+          let event: Record<string, unknown>;
+          try { event = JSON.parse(jsonStr); } catch { continue; }
+
+          if (event.type === "chunk") {
+            // Append token to the last (assistant) bubble
+            setMessages((prev) => {
+              if (prev.length === 0) return prev;
+              const last = prev[prev.length - 1];
+              if (last.role !== "assistant") return prev;
+              return [
+                ...prev.slice(0, -1),
+                { ...last, content: last.content + (event.text as string) },
+              ];
+            });
+          } else if (event.type === "tool") {
+            setToolCalls((prev) => [
+              ...prev,
+              {
+                toolName: event.name as string,
+                args: event.args as Record<string, unknown>,
+                result: event.result,
+              },
+            ]);
+          } else if (event.type === "done") {
+            // nothing extra needed
+          } else if (event.type === "error") {
+            setError((event.message as string) || "Streaming error");
+          }
         }
-        if (data.data.usage) {
-          setUsage(data.data.usage);
-        }
-        if (data.data.costInfo) {
-          setCostInfo(data.data.costInfo);
-        }
-      } else {
-        setError(data.error || "Unknown error occurred");
       }
     } catch (err) {
       setError(

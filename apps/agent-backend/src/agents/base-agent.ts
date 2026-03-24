@@ -266,7 +266,9 @@ export class BaseAgent {
     context: AgentContext,
     signal?: AbortSignal,
     onToolCall?: (toolName: string, args: unknown, result: unknown) => void,
+    options?: { raw?: boolean },
   ): AsyncGenerator<string> {
+    const rawMode = options?.raw ?? false;
     const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: this.config.systemPrompt },
       ...context.messages,
@@ -333,20 +335,25 @@ export class BaseAgent {
 
         // Accumulate text tokens
         if (delta.content) {
-          buffer += delta.content;
           fullContent += delta.content;
 
-          // Yield complete sentences as soon as we have them
-          const sentences = extractCompleteSentences(buffer);
-          if (sentences.ready.length > 0) {
-            yield sentences.ready;
-            buffer = sentences.remainder;
+          if (rawMode) {
+            // Raw mode: yield every token immediately — preserves newlines & markdown
+            yield delta.content;
+          } else {
+            // Voice mode: buffer and yield complete sentences for TTS
+            buffer += delta.content;
+            const sentences = extractCompleteSentences(buffer);
+            if (sentences.ready.length > 0) {
+              yield sentences.ready;
+              buffer = sentences.remainder;
+            }
           }
         }
       }
 
-      // Yield whatever's left in the buffer (last fragment)
-      if (buffer.trim()) {
+      // Yield whatever's left in the buffer (last fragment, voice mode only)
+      if (!rawMode && buffer.trim()) {
         yield buffer.trim();
       }
 

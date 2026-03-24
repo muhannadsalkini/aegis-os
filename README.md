@@ -195,3 +195,10 @@ Feel free to:
 - Improve documentation
 - Suggest better patterns
 - Share your learnings
+
+
+todo: 
+- steram the agent output text
+- fix the bugs in the kb tab, add kb revew part and fix the ui there
+- the user text input should expan when the user types more than one line
+- when the user is in a vocie chat the agent should know that and respond based on this
