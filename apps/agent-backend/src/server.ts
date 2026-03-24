@@ -24,12 +24,12 @@ import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
-import { env } from './config/env.js';
-import { agentRoutes } from './routes/agent.route.js';
-import { toolRoutes } from './routes/tools.route.js';
-import { knowledgeRoutes } from './routes/knowledge.route.js';
-import { registerOrchestratorRoutes } from './routes/orchestrator.route.js';
-import { voiceRoutes } from './routes/voice.route.js';
+import { env } from './core/config/env.js';
+import { agentRoutes } from './modules/agents/agent.route.js';
+import { toolRoutes } from './modules/tools/tools.route.js';
+import { knowledgeRoutes } from './modules/knowledge/knowledge.route.js';
+import { registerOrchestratorRoutes } from './modules/orchestrator/orchestrator.route.js';
+import { voiceRoutes } from './modules/voice/voice.route.js';
 
 /**
  * Build the Fastify app instance
@@ -125,7 +125,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 async function bootstrap() {
   try {
     // Initialize MCP Tools
-    await import('./tools/index.js').then(m => m.initializeMcpTools());
+    await import('./modules/tools/index.js').then(m => m.initializeMcpTools());
 
     const fastify = await buildApp();
     
