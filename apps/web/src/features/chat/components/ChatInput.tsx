@@ -33,6 +33,20 @@ export function ChatInput({
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (textarea) {
+      // Reset height to auto to recalculate
+      textarea.style.height = "auto";
+      
+      const maxHeight = 200;
+      const scrollHeight = textarea.scrollHeight;
+      
+      textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+      textarea.style.overflowY = scrollHeight > maxHeight ? "auto" : "hidden";
+    }
+  }, [input]);
+
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -58,6 +72,7 @@ export function ChatInput({
           placeholder={isVoiceActive ? "Voice mode active..." : "Ask your agent something..."}
           rows={1}
           className="flex-1 bg-aegis-bg border border-aegis-border/70 rounded-xl px-4 py-3 text-aegis-text placeholder:text-aegis-textDim text-sm leading-relaxed focus:outline-none focus:border-aegis-accent/50 resize-none"
+          style={{ minHeight: "46px" }}
         />
         <div className="shrink-0 flex items-center">
           <MicButton
