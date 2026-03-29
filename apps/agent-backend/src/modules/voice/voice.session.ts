@@ -199,8 +199,17 @@ export class VoiceSession extends EventEmitter {
     let speakingStarted = false;
 
     try {
+      // Inject a system message to inform the LLM about the voice context
+      const voiceContextMessage: Message = {
+        role: 'system',
+        content: `IMPORTANT: You are communicating with the user via a VOICE interface. Your responses will be read aloud by text-to-speech.
+1. Keep your answers concise, conversational, and natural to hear.
+2. AVOID complex markdown formatting, long lists, or code blocks unless explicitly requested.
+3. Pretend you are speaking to the user on a phone call.`
+      };
+
       for await (const sentence of agent.chatStream(
-        { messages: this.conversationHistory },
+        { messages: [voiceContextMessage, ...this.conversationHistory] },
         signal,
         (toolName, args, result) => {
           this.emit('toolCall', { toolName, args, result });
@@ -218,11 +227,7 @@ export class VoiceSession extends EventEmitter {
           speakingStarted = true;
           this.emit('state', 'speaking' as VoiceState);
         }
-
-        // ✅ FIX: Emit reply with THIS sentence only (not the accumulated fullReply).
-        // The old code emitted the first sentence on speakingStarted, then emitted the
-        // FULL accumulated text again at the end — causing the first sentence to appear
-        // twice in the chat bubble (doubling effect).
+        
         this.emit('reply', { text: trimmed });
 
         // Stream this sentence to TTS immediately — don't wait for the rest
