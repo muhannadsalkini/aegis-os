@@ -32,6 +32,7 @@ if (env.NODE_ENV === 'production') {
   console.warn = function () {};
   console.debug = function () {};
 }
+import { requireAuth } from './core/middleware/auth.js';
 import { agentRoutes } from './modules/agents/agent.route.js';
 import { toolRoutes } from './modules/tools/tools.route.js';
 import { knowledgeRoutes } from './modules/knowledge/knowledge.route.js';
@@ -69,6 +70,10 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Register WebSocket support (for voice /voice/ws)
   await fastify.register(websocket);
+
+  // Register JWT authentication middleware (validates Supabase JWT on every request)
+  // Public routes (/health) are excluded inside the hook.
+  fastify.addHook('preHandler', requireAuth);
   
   // Health check endpoint
   fastify.get('/health', async () => {

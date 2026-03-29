@@ -10,11 +10,13 @@ import { useChatStream } from "../features/chat/hooks/useChatStream";
 import { formatCost } from "../lib/utils";
 
 import { useVoiceAgent } from "../features/voice/hooks/useVoiceAgent";
+import { useAuth } from "../components/providers/AuthProvider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function TestConsole() {
   const [input, setInput] = useState("");
+  const { getAccessToken } = useAuth();
 
   const {
     messages,
@@ -27,7 +29,7 @@ export default function TestConsole() {
     costInfo,
     sendMessage,
     clearChat,
-  } = useChatStream(API_URL);
+  } = useChatStream(API_URL, getAccessToken);
 
   // Voice message handlers
   const handleUserMessage = useCallback((text: string) => {
@@ -66,6 +68,7 @@ export default function TestConsole() {
     getByteFrequencyData,
   } = useVoiceAgent({
     apiUrl: API_URL,
+    getAccessToken,
     onUserMessage: handleUserMessage,
     onAssistantSentence: handleAssistantSentence,
     onToolCall: handleToolCall,

@@ -4,6 +4,8 @@ export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error
 
 interface UseVoiceAgentProps {
   apiUrl: string;
+  /** Function to get the current JWT access token */
+  getAccessToken: () => Promise<string | null>;
   /** Called once when the user's final transcript is confirmed */
   onUserMessage?: (text: string) => void;
   /** Called for each sentence the AI produces. isFirst=true on the opening sentence of a new turn. */
@@ -12,7 +14,7 @@ interface UseVoiceAgentProps {
   onToolCall?: (toolName: string, args: unknown, result: unknown) => void;
 }
 
-export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onToolCall }: UseVoiceAgentProps) {
+export function useVoiceAgent({ apiUrl, getAccessToken, onUserMessage, onAssistantSentence, onToolCall }: UseVoiceAgentProps) {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [partialTranscript, setPartialTranscript] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -185,9 +187,28 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
       sourceNode.connect(analyser);
       analyserRef.current = analyser;
 
-      // 3. Setup WebSocket connection to backend
+      // 3. Exchange JWT for a short-lived one-time ticket (never put JWTs in URLs).
+      //    The ticket lives for 30 seconds and is single-use — replay-proof.
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const ticketRes = await fetch(`${apiUrl}/voice/ticket`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!ticketRes.ok) {
+        throw new Error(`Failed to obtain voice ticket: ${ticketRes.status}`);
+      }
+
+      const { ticket } = (await ticketRes.json()) as { ticket: string };
+
+      // 4. Open the WebSocket with the opaque ticket — safe to log/proxy
       const wsUrl = new URL('/voice/ws', apiUrl);
       wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl.searchParams.set('ticket', ticket);
       const ws = new WebSocket(wsUrl.toString());
       ws.binaryType = 'arraybuffer';
       wsRef.current = ws;
@@ -313,10 +334,16 @@ export function useVoiceAgent({ apiUrl, onUserMessage, onAssistantSentence, onTo
       };
 
     } catch (err) {
-      console.error('Mic error:', err);
-      let errMsg = 'Could not access microphone';
-      if (err instanceof Error && err.name === 'NotAllowedError') {
-        errMsg = 'Microphone access denied';
+      console.error('Voice session error:', err);
+      let errMsg = 'Could not start voice session';
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          errMsg = 'Microphone access denied';
+        } else if (err.message.startsWith('Failed to obtain voice ticket')) {
+          errMsg = 'Authentication failed — please refresh and try again';
+        } else if (err.message === 'Not authenticated') {
+          errMsg = 'You must be logged in to use voice';
+        }
       }
       setErrorMsg(errMsg);
       setVoiceState('error');

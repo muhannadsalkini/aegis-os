@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Message, ToolCall, ChatUsage, ChatCostInfo } from "../types";
 
-export function useChatStream(apiUrl: string) {
+export function useChatStream(apiUrl: string, getAccessToken: () => Promise<string | null>) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
@@ -30,9 +30,19 @@ export function useChatStream(apiUrl: string) {
     setToolCalls([]);
 
     try {
+      // Get the JWT access token for authentication
+      const token = await getAccessToken();
+      console.log('[useChatStream] Token obtained:', token ? `${token.substring(0, 20)}...` : 'NULL');
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${apiUrl}/agents/chat/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           messages: newMessages.map((m) => ({
             role: m.role,
