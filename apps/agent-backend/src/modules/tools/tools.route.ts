@@ -17,6 +17,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { getAllTools, getTool, executeTool } from '../../modules/tools/index.js';
+import { env } from '../../core/config/env.js';
 
 /**
  * Schema for testing a tool
@@ -72,55 +73,52 @@ export async function toolRoutes(fastify: FastifyInstance) {
     });
   });
   
-  /**
-   * POST /tools/:name/test
-   * Test a tool directly
-   * 
-   * Example:
-   * POST /tools/calculator/test
-   * { "args": { "operation": "multiply", "a": 5, "b": 10 } }
-   */
-  fastify.post('/tools/:name/test', async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
-    const { name } = request.params;
-    
-    try {
-      const body = testToolSchema.parse(request.body);
-      
-      const tool = getTool(name);
-      
-      if (!tool) {
-        return reply.status(404).send({
+  // ── POST /tools/:name/test  (development only) ────────────────────────────
+  //
+  // This endpoint executes any registered tool with arbitrary arguments
+  if (env.NODE_ENV !== 'production') {
+    fastify.post('/tools/:name/test', async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
+      const { name } = request.params;
+
+      try {
+        const body = testToolSchema.parse(request.body);
+
+        const tool = getTool(name);
+
+        if (!tool) {
+          return reply.status(404).send({
+            success: false,
+            error: `Tool "${name}" not found`,
+          });
+        }
+
+        console.log(`\n🧪 Testing tool: ${name}`);
+        console.log(`   Args: ${JSON.stringify(body.args)}`);
+
+        const result = await executeTool(name, body.args);
+
+        return reply.send({
+          success: true,
+          data: result,
+        });
+      } catch (error) {
+        console.error('❌ Tool test error:', error);
+
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: 'Invalid request format',
+            details: error.errors,
+          });
+        }
+
+        return reply.status(500).send({
           success: false,
-          error: `Tool "${name}" not found`,
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-      
-      console.log(`\n🧪 Testing tool: ${name}`);
-      console.log(`   Args: ${JSON.stringify(body.args)}`);
-      
-      const result = await executeTool(name, body.args);
-      
-      return reply.send({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      console.error('❌ Tool test error:', error);
-      
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Invalid request format',
-          details: error.errors,
-        });
-      }
-      
-      return reply.status(500).send({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
-  });
+    });
+  }
 }
 
 
