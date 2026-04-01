@@ -17,6 +17,7 @@
 
 import type { Tool } from '../../../core/types/tool.js';
 import * as cheerio from 'cheerio';
+import { sanitizeForLLM, wrapUntrustedContent } from '../../../shared/utils/sanitize.js';
 
 /**
  * Extract main content from HTML
@@ -156,10 +157,16 @@ export const webBrowseTool: Tool = {
       // Truncate content if too long (keep first 5000 chars)
       const maxContentLength = 5000;
       const truncated = extracted.content.length > maxContentLength;
-      const content = truncated 
+      const rawContent = truncated
         ? extracted.content.substring(0, maxContentLength) + '\n\n[Content truncated...]'
         : extracted.content;
-      
+
+      // Defence against indirect prompt injection (C-05):
+      //   1. Strip known injection trigger phrases
+      //   2. Wrap in trust-boundary markers so the LLM knows this is untrusted
+      const sanitizedContent = sanitizeForLLM(rawContent);
+      const content = wrapUntrustedContent(sanitizedContent);
+
       const result = {
         url,
         title: extracted.title,
