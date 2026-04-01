@@ -20,7 +20,7 @@
  * If you know Express, Fastify will feel familiar!
  */
 
-import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
@@ -76,25 +76,25 @@ export async function buildApp(): Promise<FastifyInstance> {
   fastify.addHook('preHandler', requireAuth);
   
   // Health check endpoint
+  // In production: minimal response — no version or timestamp to avoid fingerprinting (L-01)
   fastify.get('/health', async () => {
-    return { 
+    if (env.NODE_ENV === 'production') {
+      return { status: 'ok' };
+    }
+    return {
       status: 'ok',
       timestamp: new Date().toISOString(),
       version: '0.1.0',
     };
   });
 
-  fastify.post('/test', async (request: FastifyRequest, reply: FastifyReply) => {
-    console.log('req: ', request.body);
-    return reply.send({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      version: '0.1.0',
-    });
-  });
-  
-  // Root endpoint with info
+  // Root endpoint
+  // In production: minimal branding only — no routes, version, or internal structure (L-01)
+  // In development: full route map for convenience
   fastify.get('/', async () => {
+    if (env.NODE_ENV === 'production') {
+      return { name: 'Aegis OS API' };
+    }
     return {
       name: 'Aegis OS - Agent Backend',
       version: '0.1.0',
