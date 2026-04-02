@@ -18,6 +18,7 @@
 import type { Tool } from '../../../core/types/tool.js';
 import * as cheerio from 'cheerio';
 import { sanitizeForLLM, wrapUntrustedContent } from '../../../shared/utils/sanitize.js';
+import { validateUrl } from '../../../shared/utils/validation.js';
 
 /**
  * Extract main content from HTML
@@ -133,10 +134,17 @@ export const webBrowseTool: Tool = {
     };
     
     try {
-      console.log(`🌐 Browsing: ${url}`);
+      // Guard against SSRF — block localhost, private IPs, and non-HTTP(S) schemes (C-04)
+      const urlValidation = validateUrl(url);
+      if (!urlValidation.valid) {
+        return { success: false, error: urlValidation.error ?? 'Invalid URL' };
+      }
+      const safeUrl = urlValidation.sanitized!;
+
+      console.log(`🌐 Browsing: ${safeUrl}`);
       
       // Fetch the web page
-      const response = await fetch(url, {
+      const response = await fetch(safeUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; AegisBot/1.0)'
         }
