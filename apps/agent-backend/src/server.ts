@@ -56,8 +56,29 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // Register CORS for frontend access
+  const allowedOrigins: string[] = [
+    env.WEB_APP_URL.replace(/\/$/, ''), // strip trailing slash — guaranteed by Zod
+  ];
+  if (env.NODE_ENV === 'development') {
+    // Allow both the configured URL and the canonical Next.js dev server
+    if (!allowedOrigins.includes('http://localhost:3000')) {
+      allowedOrigins.push('http://localhost:3000');
+    }
+  }
+
   await fastify.register(cors, {
-    origin: (process.env.WEB_APP_URL || '').replace(/\/$/, '') || true, // Use env var (without trailing slash) or allow all in dev
+    origin: (incomingOrigin, callback) => {
+      // Same-origin requests and server-to-server calls have no Origin header
+      if (!incomingOrigin) {
+        callback(null, true);
+        return;
+      }
+      if (allowedOrigins.includes(incomingOrigin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${incomingOrigin} is not allowed by CORS`), false);
+      }
+    },
     credentials: true,
   });
 

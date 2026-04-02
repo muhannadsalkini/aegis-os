@@ -47,6 +47,11 @@ const envSchema = z.object({
   // Voice API Keys (required for voice agent)
   DEEPGRAM_API_KEY: z.string().default(''),
   ELEVENLABS_API_KEY: z.string().default(''),
+
+  // CORS — the origin that the frontend is served from.
+  // In development this defaults to localhost:3000.
+  // In production you MUST set this to your actual frontend URL.
+  WEB_APP_URL: z.string().url('WEB_APP_URL must be a valid URL').default('http://localhost:3000'),
 });
 
 /**
