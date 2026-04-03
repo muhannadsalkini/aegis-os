@@ -12,9 +12,17 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getAgent } from '../../modules/agents/index.js';
 
+/**
+ * Cap task and context lengths to prevent oversized prompts
+ * and prompt-injection payloads from being forwarded to the LLM.
+ */
 const OrchestratorRequestSchema = z.object({
-  task: z.string().min(1, 'Task description is required'),
-  context: z.string().optional(),
+  task: z.string()
+    .min(1, 'Task description is required')
+    .max(5_000, 'Task description exceeds maximum length of 5,000 characters'),
+  context: z.string()
+    .max(5_000, 'Context exceeds maximum length of 5,000 characters')
+    .optional(),
 });
 
 /**

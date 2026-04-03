@@ -22,12 +22,21 @@ import type { Message } from '../../core/types/agent.js';
 
 /**
  * Schema for chat request body
+ *
+ * Only 'user' and 'assistant' roles are accepted from
+ * external callers. The 'system' role is reserved for server-side agent
+ * prompts and must never be injectable by API clients.
+ *
+ * Additionally we cap content length and the total number of messages to
+ * prevent abuse / oversized prompts.
  */
 const chatRequestSchema = z.object({
   messages: z.array(z.object({
-    role: z.enum(['user', 'assistant', 'system']),
-    content: z.string(),
-  })),
+    role: z.enum(['user', 'assistant']),           // 'system' intentionally excluded
+    content: z.string().max(10_000, 'Message content exceeds maximum length of 10,000 characters'),
+  }))
+  .min(1, 'At least one message is required')
+  .max(50, 'Too many messages in a single request'),
 });
 
 type ChatRequest = z.infer<typeof chatRequestSchema>;
