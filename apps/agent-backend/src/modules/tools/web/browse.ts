@@ -134,8 +134,8 @@ export const webBrowseTool: Tool = {
     };
     
     try {
-      // Guard against SSRF — block localhost, private IPs, and non-HTTP(S) schemes (C-04)
-      const urlValidation = validateUrl(url);
+      // Guard against SSRF — block localhost, private IPs, encoded IPs, and non-HTTP(S) schemes (C-04 / H-01)
+      const urlValidation = await validateUrl(url);
       if (!urlValidation.valid) {
         return { success: false, error: urlValidation.error ?? 'Invalid URL' };
       }

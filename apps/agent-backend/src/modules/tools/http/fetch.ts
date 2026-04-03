@@ -70,8 +70,8 @@ Limitations:
       const method = (args.method as string)?.toUpperCase() || 'GET';
       const body = args.body as string | undefined;
       
-      // Validate URL
-      const validation = validateUrl(url);
+      // Validate URL (async — performs DNS resolution to block SSRF bypasses)
+      const validation = await validateUrl(url);
       if (!validation.valid) {
         return { success: false, error: validation.error };
       }
