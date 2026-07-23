@@ -17,8 +17,10 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   
   if (texts.length === 0) return [];
 
-  // Cleanup texts (remove newlines usually helps)
-  const cleanTexts = texts.map(t => t.replace(/\n/g, ' '));
+  // Cleanup texts: collapse line breaks into spaces so multi-line chunks
+  // embed as a single continuous passage.
+  const cleanTexts = texts.map(t => t.replace(/\r?\n/, ' ').trim());
+
 
   try {
     const response = await openai.embeddings.create({

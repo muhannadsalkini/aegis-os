@@ -65,14 +65,17 @@ export class DeepgramSttProvider implements ISttProvider {
   }
 
   async createStream(): Promise<SttStream> {
+    // Deepgram connection parameters. `nova-2` (en-US) is the model this
+    // provider is built and tested against, so we pin it here directly.
     const socket = await this.client.listen.v1.connect({
       Authorization: `Token ${this.apiKey}`,
-      model: VOICE_CONFIG.stt.model as 'nova-2',
-      language: VOICE_CONFIG.stt.language,
+      model: 'nova-2',
+      language: 'en-US',
       // Emit interim results so partial transcripts flow to the UI
       interim_results: 'true',
       // end-of-speech detection (ms)
       endpointing: VOICE_CONFIG.stt.silenceTimeoutMs,
+
       // @ts-expect-error typing mismatch
       keepalive: 'true',
     });

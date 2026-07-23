@@ -101,7 +101,8 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
 
       const store = new VectorStore();
       // Use 0.2 threshold - returns results with >20% similarity
-      const results = await store.similaritySearch(embeddings[0], 5, 0.2);
+      const results = await store.similaritySearch(embeddings[0], { limit: 5, matchThreshold: 0.2 });
+
 
       console.log(`   Found ${results.length} results`);
       if (results.length > 0) {

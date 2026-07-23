@@ -47,13 +47,21 @@ export class VectorStore {
   /**
    * Search for similar documents
    * Requires a postgres function `match_documents` to be defined in Supabase
+   *
+   * Options are passed as a single object so new tuning knobs can be added
+   * without breaking the positional argument order.
    */
-  async similaritySearch(queryEmbedding: number[], limit: number = 5, matchThreshold: number = 0.2): Promise<SearchResult[]> {
+  async similaritySearch(
+    queryEmbedding: number[],
+    options: { limit?: number; matchThreshold?: number } = {}
+  ): Promise<SearchResult[]> {
+    const { limit = 5, matchThreshold = 0.2 } = options;
     const { data, error } = await this.client.rpc('match_documents', {
       query_embedding: queryEmbedding,
       match_threshold: matchThreshold,
       match_count: limit,
     });
+
 
     if (error) {
       throw new Error(`Error searching documents: ${error.message}`);

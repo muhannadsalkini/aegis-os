@@ -20,8 +20,11 @@ export const VOICE_CONFIG = {
     /** George — clear, neutral, works well for short replies */
     voiceId: 'JBFqnCBsd6RMkjVDRZzb',
     modelId: 'eleven_turbo_v2_5',
-    outputFormat: 'pcm_24000' as const,
+    /** 16kHz PCM — smaller frames mean lower first-audio latency and less
+     *  bandwidth; plenty for a speech-only voice. */
+    outputFormat: 'pcm_16000' as const,
   },
+
 } as const;
 
 export type SttProvider = typeof VOICE_CONFIG.stt.provider;
