@@ -1,52 +1,59 @@
-# 🛡️ Aegis OS - Your AI Agent Operating System
+# 🛡️ Aegis OS
 
-> Your own AI agents with tools, RAG knowledgebases, MCP support, and real-time streaming.
+**A multi-agent AI platform with tool calling, RAG, MCP integration, and real-time voice — built as a TypeScript monorepo.**
 
-## 🎯 What is Aegis OS?
+🌐 **Live:** [aegisos.info](https://aegisos.info/)
 
-Think of it as your personal Copilot Studio, but cooler.
-
-By the end of this project, you'll understand:
-- ✅ **Agents** — How LLMs become autonomous workers
-- ✅ **Tools** — How to give AI the ability to interact with the world
-- ✅ **RAG** — How to build knowledge systems for your agents
-- ✅ **Streaming** — How to make responses feel alive and real-time
-- ✅ **MCP** — Model Context Protocol for OS-level tool access
-- ✅ **Multi-agent systems** — Agents collaborating together
-- ✅ **Voice Interaction** — Real-time speech-to-text (STT) and text-to-speech (TTS)
+Aegis OS is a chat and voice console backed by a custom agent engine. Agents run an OpenAI function-calling loop over a registry of tools, retrieve from a Supabase/pgvector knowledge base, delegate work to specialized sub-agents, and stream every token, tool call, and tool result back to the browser as it happens.
 
 ---
 
-## 🏗️ Architecture Overview
+## ✨ Features
+
+- **Agent engine** — `BaseAgent` runs a bounded tool-call loop (max 10 iterations) with blocking and streaming modes; streamed over SSE (`chunk` / `tool` / `done` / `error` events).
+- **Multi-agent orchestration** — a default conversational agent plus Researcher, Planner, and Orchestrator agents. The orchestrator hands off work sequentially (`delegate_to_agent`, loop-guarded) or in parallel (`coordinate_agents`, timeout-bounded).
+- **15 built-in tools** — calculator, time, web search (DuckDuckGo), web browse/scrape, summarize, HTTP fetch, weather (Open-Meteo), sandboxed file read/write/list, knowledge-base search, task decomposition, goal validation, and agent delegation/coordination.
+- **RAG knowledge base** — upload PDF, TXT, Markdown, or JSON; documents are parsed, chunked (1000/200 recursive splitter), embedded with `text-embedding-3-small`, and stored in Supabase pgvector. Retrieval is available as an agent tool and as an API.
+- **MCP integration** — the backend spawns a standalone MCP filesystem server over stdio and registers its tools automatically (prefixed `mcp_`).
+- **Real-time voice** — WebSocket pipeline with Deepgram STT (`nova-2`) and ElevenLabs TTS (`eleven_turbo_v2_5`). Replies are synthesized sentence by sentence while the agent is still generating, and the user can barge in to interrupt mid-reply.
+- **Cost-aware model selection** — a complexity estimator routes each request to an appropriately sized model and reports token usage and estimated cost.
+- **Security hardening** — Supabase JWT auth verified against JWKS, single-use 30s tickets for WebSocket auth (no JWTs in URLs), SSRF-safe URL validation with DNS resolution, prompt-injection sanitization and trust-boundary wrapping of scraped content, filesystem sandboxing, CORS allowlist, Zod validation on every request and on env config.
+
+---
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                          FRONTEND                               │
-│                     Next.js 15 Dashboard                        │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ tRPC / HTTPS / WebSocket
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    AEGIS OS — AGENT BACKEND                     │
-│                  Node.js (Fastify) + OpenAI SDK                 │
-├─────────────────────────────────────────────────────────────────┤
-│  Agent Orchestrator  ←→  Agent Registry (configs, tools)        │
-│         ↓                        ↓                              │
-│  Reasoning Engine          Agent Types (convo, researcher...)   │
-│  (ReAct, planning)              ↓                               │
-│         ↓                  MCP Gateway                          │
-│    TOOL LAYER              (OS-level access)                    │
-│  (JSON schema fns)              ↓                               │
-│         ↓                  KNOWLEDGEBASE                        │
-│   RAG PIPELINE             (Supabase/pgvector)                  │
-├─────────────────────────────────────────────────────────────────┤
-│              STREAMING LAYER (SSE / WebSocket)                  │
-│          Live tokens • Tool calls • Tool results                │
-├─────────────────────────────────────────────────────────────────┤
-│             VOICE INTEGRATION (Deepgram / ElevenLabs)           │
-│          Real-time STT (Listening) • TTS (Speaking)             │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  apps/web — Next.js 15 (App Router)                          │
+│  Chat console • Voice mode • Knowledge upload • Auth         │
+└──────────────┬──────────────────────────────┬────────────────┘
+               │ HTTPS + SSE (chat, RAG)      │ WebSocket (voice)
+               ▼                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│  apps/agent-backend — Fastify + OpenAI SDK                   │
+├──────────────────────────────────────────────────────────────┤
+│  Routes: /agents  /tools  /knowledge  /api/orchestrator      │
+│          /voice/ticket  /voice/ws        (JWT preHandler)    │
+├──────────────────────────────────────────────────────────────┤
+│  Agents: Aegis • Researcher • Planner • Orchestrator         │
+│          BaseAgent tool-call loop + model selection          │
+├──────────────────────────────────────────────────────────────┤
+│  Tool registry: web • http • weather • filesystem • planner  │
+│                 knowledge search • delegation • MCP tools    │
+├──────────────────────────────────────────────────────────────┤
+│  Voice session: Deepgram STT → agent stream → ElevenLabs TTS │
+├──────────────────────────────────────────────────────────────┤
+│  Shared: RAG (parse/chunk/embed/store) • MCP client •        │
+│          SSRF validation • sanitization                      │
+└──────┬───────────────────────┬────────────────────┬──────────┘
+       │ stdio                 │                    │
+       ▼                       ▼                    ▼
+ apps/mcp-filesystem    Supabase (Auth +      OpenAI, Deepgram,
+ (MCP server)           pgvector documents)   ElevenLabs
 ```
+
+Dependencies flow strictly downward: routes → agents → tools → shared → core. See [ARCHITECTURE.md](ARCHITECTURE.md) for request lifecycles, data flow, and cross-cutting rules, and each app's `README.md` for module-level detail.
 
 ---
 
@@ -54,36 +61,87 @@ By the end of this project, you'll understand:
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | Next.js 15, React 19, Tailwind, Vercel AI SDK |
-| **Backend** | Node.js, Fastify, TypeScript |
-| **AI** | OpenAI SDK v4, Function calling, Streaming |
-| **Database** | PostgreSQL + pgvector (Supabase) |
-| **RAG** | text-embedding-3-large, LangChain |
-| **Protocol** | MCP (Model Context Protocol) |
-| **Communication** | tRPC, WebSocket, SSE |
-| **Voice** | Deepgram (STT), ElevenLabs (TTS) |
+| **Frontend** | Next.js 15, React 19, Tailwind CSS, lucide-react, react-markdown |
+| **Backend** | Node.js 20, Fastify 4, TypeScript, Zod |
+| **AI** | OpenAI SDK (function calling, streaming, embeddings) |
+| **Data & Auth** | Supabase (Postgres + pgvector, Auth), `jose` for JWT verification |
+| **Protocol** | Model Context Protocol (`@modelcontextprotocol/sdk`) |
+| **Voice** | Deepgram (STT), ElevenLabs (TTS), Web Audio API |
+| **Transport** | REST, Server-Sent Events, WebSocket |
+| **Tooling** | pnpm workspaces, tsx, nodemon |
 
 ---
 
-## 🔧 Available Tools (Phase 2)
+## 🚀 Getting Started
 
-| Tool | Description | API Used |
-|------|-------------|----------|
-| 🧮 `calculator` | Math operations | Built-in |
-| 🕐 `get_current_time` | Current date/time | Built-in |
-| 🔍 `web_search` | Search the internet | DuckDuckGo (free) |
-| 🌐 `http_fetch` | Fetch any URL | Native fetch |
-| 🌤️ `get_weather` | Weather & forecast | Open-Meteo (free) |
-| 📄 `read_file` | Read workspace files | Local filesystem |
-| ✏️ `write_file` | Create/update files | Local filesystem |
-| 📁 `list_directory` | List files | Local filesystem |
+### Prerequisites
 
-### 🔒 Safety Features
-- **Path validation** — Prevents directory traversal attacks
-- **URL validation** — Blocks localhost/internal networks
-- **Size limits** — Max 1MB reads, 500KB writes
-- **Timeouts** — 10 second max for HTTP requests
-- **Sandboxing** — File tools restricted to `workspace/` directory
+- Node.js 20+ and pnpm 9
+- An OpenAI API key
+- A Supabase project with pgvector enabled — run the SQL in [docs/phase-3-rag/SETUP.md](docs/phase-3-rag/SETUP.md) to create the `documents` table and `match_documents` function
+- Optional: Deepgram and ElevenLabs API keys for voice mode
+
+### 1. Install
+
+```bash
+git clone https://github.com/muhannadsalkini/aegis-os.git
+cd aegis-os
+pnpm install
+```
+
+### 2. Configure the backend
+
+```bash
+cp apps/agent-backend/env.example.txt apps/agent-backend/.env
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | ✅ | OpenAI API key |
+| `SUPABASE_URL` | ✅ | Supabase project URL (also used for JWKS verification) |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Service-role key for the vector store |
+| `OPENAI_MODEL` | | Default model (`gpt-4o-mini`) |
+| `PORT` | | Backend port (`3001`) |
+| `WEB_APP_URL` | | Allowed CORS origin (`http://localhost:3000`) |
+| `DEEPGRAM_API_KEY` | | Required for voice |
+| `ELEVENLABS_API_KEY` | | Required for voice |
+
+### 3. Configure the web app
+
+Create `apps/web/.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+### 4. (Optional) Build the MCP server
+
+```bash
+pnpm --filter mcp-filesystem build
+```
+
+If it isn't built, the backend skips MCP tools with a warning and keeps running.
+
+### 5. Run
+
+```bash
+pnpm dev        # agent backend on http://localhost:3001
+pnpm dev:web    # web app on http://localhost:3000
+```
+
+Sign in through Supabase Auth at `http://localhost:3000/login`. All backend routes except `/` and `/health` require a Supabase access token (`Authorization: Bearer <token>`).
+
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start the agent backend (nodemon + tsx) |
+| `pnpm dev:web` | Start the Next.js app (Turbopack) |
+| `pnpm dev:all` | Start every workspace package in dev mode |
+| `pnpm build` | Build all packages |
+| `pnpm lint` | Lint all packages |
 
 ---
 
@@ -92,111 +150,43 @@ By the end of this project, you'll understand:
 ```
 aegis-os/
 ├── apps/
-│   ├── web/                    # Next.js 15 frontend (Dashboard)
-│   │   └── src/app/            # App router pages
-│   └── agent-backend/          # Node agent engine (Fastify)
-│       └── src/
-│           ├── agents/         # Agent logic & registry
-│           ├── tools/          # All tools organized by category
-│           │   ├── calculator.ts
-│           │   ├── time.ts
-│           │   ├── web/search.ts
-│           │   ├── weather/weather.ts
-│           │   ├── filesystem/read.ts, write.ts, list.ts
-│           │   └── http/fetch.ts
-│           ├── routes/         # API endpoints
-│           ├── utils/          # Validation & HTTP helpers
-│           ├── voice/          # Real-time Voice Session & Providers
-│           │   ├── providers/  # Deepgram STT & ElevenLabs TTS
-│           │   ├── voice.config.ts # API configurations
-│           │   └── voice.session.ts # WS session orchestrator
-│           └── types/          # TypeScript definitions
-├── docs/                       # Learning notes & diagrams
-│   ├── phase-1-foundations/
-│   └── phase-2-tools/
-└── docker/                     # Deployment configs
+│   ├── web/                     # Next.js frontend
+│   │   └── src/
+│   │       ├── app/             # Routes: / (chat + voice), /login, /knowledge, /auth/callback
+│   │       ├── features/        # chat/ and voice/ components + hooks (SSE, WebSocket, PCM playback)
+│   │       ├── components/      # Layout and AuthProvider
+│   │       └── lib/supabase/    # Browser/server/middleware Supabase clients
+│   ├── agent-backend/           # Fastify agent engine
+│   │   ├── api/index.ts         # Serverless entry (Vercel)
+│   │   └── src/
+│   │       ├── server.ts        # App bootstrap, CORS, auth hook, route registration
+│   │       ├── core/            # Env validation, model catalog, OpenAI client, auth middleware, types
+│   │       ├── modules/
+│   │       │   ├── agents/      # BaseAgent, agent registry, researcher & planner agents
+│   │       │   ├── orchestrator/# Orchestrator agent and route
+│   │       │   ├── tools/       # Tool registry and all tool implementations
+│   │       │   ├── knowledge/   # RAG upload/search routes
+│   │       │   └── voice/       # Voice session, ticket route, Deepgram/ElevenLabs providers
+│   │       └── shared/          # RAG pipeline, MCP client, ticket store, validation, sanitization
+│   └── mcp-filesystem/          # Standalone MCP server (stdio) for filesystem tools
+├── docs/
+│   ├── phase-1-foundations/ … phase-5-mcp/   # Design notes per build phase
+│   └── planning/                # Original idea, roadmap, and diagrams
+├── ARCHITECTURE.md
+└── pnpm-workspace.yaml
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🗺️ Roadmap
 
-### Prerequisites
-- Node.js 20+
-- pnpm (recommended) or npm
-- OpenAI API key
-
-### Installation
-
-```bash
-# Install dependencies
-pnpm install
-
-# Set up environment variables
-cd apps/agent-backend
-cp env.example.txt .env
-# Edit .env and add your OPENAI_API_KEY
-```
-
-### Running the Project
-
-```bash
-# Terminal 1 - Start the agent backend
-pnpm dev
-
-# Terminal 2 - Start the web UI
-pnpm dev:web
-```
-
-Then open **http://localhost:3000** in your browser!
+- Agent management dashboard (create and configure agents from the UI)
+- Per-user knowledge-base scoping
+- Persistent chat history
+- Image generation tool
 
 ---
 
-## 🧪 Test Your Agent
+## 📄 License
 
-### Via the Web UI
-Open http://localhost:3000 and try:
-- "What is 25 * 48?"
-- "What's the weather in Tokyo?"
-- "Search for TypeScript tutorial"
-- "List files in workspace"
-
-### Via curl
-```bash
-# Chat with the agent
-curl -X POST http://localhost:3001/agents/chat \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "What is the weather in London?"}]}'
-
-# Test a tool directly
-curl -X POST http://localhost:3001/tools/calculator/test \
-  -H "Content-Type: application/json" \
-  -d '{"args": {"operation": "multiply", "a": 25, "b": 48}}'
-```
-
----
-
-## 🗣️ Voice Integration
-
-Aegis OS supports real-time, low-latency voice interactions through its dedicated WebSockets pipeline (`/voice/ws`).
-
-### Key Components:
-- **STT (Speech-to-Text)**: Deepgram (`nova-2` model) ensures split-second transcription and silence detection.
-- **TTS (Text-to-Speech)**: ElevenLabs (`eleven_turbo_v2_5` model) delivers rapid, human-like audio streaming.
-- **`VoiceSession` Manager**: Orchestrates real-time state transitions (`listening` ↔ `thinking` ↔ `speaking`) and gracefully handles user barge-ins (interrupting the AI mid-sentence).
-- **Concurrent Execution**: Audio streaming runs concurrently with the Agent's reasoning loop; speech responses are synthesized on-the-fly, sentence-by-sentence as tokens are generated.
-
----
-
-## 🤝 Contributing
-
-Feel free to:
-- Add more tools
-- Improve documentation
-- Suggest better patterns
-- Share your learnings
-
-
-todo: 
-- fix the bugs in the kb tab, add kb revew part and fix the ui there
-- make the agent generate images using nano banana
+[MIT](LICENSE) © 2026 Muhannad Salkini

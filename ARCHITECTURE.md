@@ -119,9 +119,6 @@ the researcher/planner agents, which run their own `BaseAgent` loops.
   don't rely on console logs in prod.
 - MCP tools only exist if `mcp-filesystem` is built; otherwise they're silently
   skipped.
-- The web `app/page.tsx` imports voice code from paths (`../hooks`,
-  `../components/voice`) that differ from the `features/voice` tree — confirm the
-  authoritative copies before editing (`TODO: verify`).
 
 ---
 Source files read: root `package.json`, `pnpm-workspace.yaml`, `tsconfig.json`, and the three per-app source trees documented in `apps/*/README.md` (agents, tools, orchestrator, voice, RAG, MCP client, shared utils, web auth/chat/voice hooks, and the MCP filesystem server).
